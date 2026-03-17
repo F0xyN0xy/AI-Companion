@@ -8,6 +8,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const http = require('http');
 const { URL } = require('url');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let rpcClient = null;
@@ -20,17 +21,17 @@ const GROQ_API_KEY = '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';
 const OPENROUTER_API_KEY = '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';
 const DISCORD_CLIENT_ID = '1482811470801666229';
 
-const JWT_SECRET = 'ai-companion-nova-2026';
+const JWT_SECRET = 'CHANGE_ME_TO_A_LONG_RANDOM_STRING';
 
 // ─── JSONBin config ───────────────────────────────────────────────────────────
 // Create a bin at jsonbin.io, paste its ID and your Master Key here
-const JSONBIN_BIN_ID = '69b994bfb7ec241ddc78e49e';
-const JSONBIN_API_KEY = '$2a$10$qnwVz/rjOwOGtcpGF40oz.EifFhWeiWwb7QRZeKaC/VyI8NHJ9T72';
+const JSONBIN_BIN_ID = 'YOUR_BIN_ID';
+const JSONBIN_API_KEY = 'YOUR_JSONBIN_MASTER_KEY';
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // ─── Gmail config ─────────────────────────────────────────────────────────────
-const GMAIL_USER = 'myteam.noreply@gmail.com';
-const GMAIL_APP_PASS = 'quzq gevh ctws gtpp';
+const GMAIL_USER = 'YOUR_GMAIL@gmail.com';
+const GMAIL_APP_PASS = 'YOUR_16_CHAR_APP_PASSWORD';
 
 // ─── Local verify server port ─────────────────────────────────────────────────
 const VERIFY_PORT = 3322;
@@ -535,10 +536,32 @@ function createWindow() {
 ipcMain.on('window-minimize', () => mainWindow?.minimize());
 ipcMain.on('window-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize());
 ipcMain.on('window-close', () => mainWindow?.close());
+ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
 app.whenReady().then(() => {
   startVerifyServer();
   createWindow();
+
+  // Auto-update — checks GitHub releases silently, prompts user when one is ready
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', () => {
+    mainWindow?.webContents.send('update-status', { status: 'downloading' });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    // Notify renderer so it can show an "Update ready" banner
+    mainWindow?.webContents.send('update-status', { status: 'ready' });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.log('Update error:', err.message);
+  });
+
+  // Check for updates 3 seconds after launch, then every 2 hours
+  setTimeout(() => autoUpdater.checkForUpdates(), 3000);
+  setInterval(() => autoUpdater.checkForUpdates(), 2 * 60 * 60 * 1000);
 });
 
 app.on('window-all-closed', () => {
