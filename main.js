@@ -272,6 +272,9 @@ ipcMain.handle('auth-login', async (_, { email, password }) => {
     const saved = loadData(userDir);
     initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
 
+    // Navigate to main app
+    mainWindow?.loadFile('index.html');
+
     return { success: true, user: userData, userDir };
   } catch (e) {
     return { success: false, error: e.message };
@@ -395,6 +398,7 @@ async function initDiscordRPC(companionName, mood) {
   if (!DiscordRPC) return;
   try {
     if (rpcClient) { try { await rpcClient.destroy(); } catch (e) { } rpcClient = null; rpcConnected = false; }
+    DiscordRPC.register(DISCORD_CLIENT_ID);
     rpcClient = new DiscordRPC.Client({ transport: 'ipc' });
     rpcClient.on('ready', () => {
       rpcConnected = true; rpcStartTime = new Date();
