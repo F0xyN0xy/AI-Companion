@@ -10,28 +10,32 @@ const http = require('http');
 const { URL } = require('url');
 const { autoUpdater } = require('electron-updater');
 
+// Load .env from app root (works both in dev and when packaged)
+const dotenvPath = app.isPackaged
+  ? path.join(process.resourcesPath, '.env')
+  : path.join(__dirname, '.env');
+require('dotenv').config({ path: dotenvPath });
+
 let mainWindow;
 let rpcClient = null;
 let rpcConnected = false;
 let rpcStartTime = null;
 let verifyServer = null;
 
-// ─── Credentials ──────────────────────────────────────────────────────────────
-const GROQ_API_KEY = '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';
-const OPENROUTER_API_KEY = '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';
-const DISCORD_CLIENT_ID = '1482811470801666229';
-
-const JWT_SECRET = 'CHANGE_ME_TO_A_LONG_RANDOM_STRING';
+// ─── Credentials (all loaded from .env) ──────────────────────────────────────
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ─── JSONBin config ───────────────────────────────────────────────────────────
-// Create a bin at jsonbin.io, paste its ID and your Master Key here
-const JSONBIN_BIN_ID = 'YOUR_BIN_ID';
-const JSONBIN_API_KEY = 'YOUR_JSONBIN_MASTER_KEY';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
+const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // ─── Gmail config ─────────────────────────────────────────────────────────────
-const GMAIL_USER = 'YOUR_GMAIL@gmail.com';
-const GMAIL_APP_PASS = 'YOUR_16_CHAR_APP_PASSWORD';
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASS = process.env.GMAIL_APP_PASSWORD;
 
 // ─── Local verify server port ─────────────────────────────────────────────────
 const VERIFY_PORT = 3322;
@@ -381,6 +385,7 @@ function loadAsset(userDir, type) {
 }
 
 // ─── IPC — data ───────────────────────────────────────────────────────────────
+ipcMain.handle('get-version', () => app.getVersion());
 ipcMain.handle('load-data', (_, ud) => loadData(ud));
 ipcMain.handle('save-data', (_, ud, d) => { saveData(ud, d); return true; });
 ipcMain.handle('get-data-path', (_, ud) => ud);

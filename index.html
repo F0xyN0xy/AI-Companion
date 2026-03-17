@@ -1509,8 +1509,11 @@
       <div class="infobadge" style="background:rgba(58,165,92,.1);border:1px solid rgba(58,165,92,.25);color:#3ba55c;">✓
         API keys configured</div>
       <div class="infobadge"
-        style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.25);color:#8891f2;margin-bottom:0">🎮
-        Discord RPC active when Discord is open</div>
+        style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.25);color:#8891f2;">🎮 Discord RPC
+        active when Discord is open</div>
+      <div class="infobadge"
+        style="background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.25);color:#9a7845;margin-bottom:0">✦
+        Version <span id="appVersionEl">…</span></div>
 
       <div class="divider"></div>
 
@@ -2220,6 +2223,10 @@
       document.getElementById('customPersonalityInput').value = appData.companion.customPersonality || '';
       pickAvatar(appData.companion.avatar);
       pickColor(appData.companion.color);
+      window.electron.getVersion().then(v => {
+        const el = document.getElementById('appVersionEl');
+        if (el) el.textContent = v;
+      });
       pickPersonality(appData.companion.personality);
       pickModel(appData.modelId || 'llama-groq');
       // Show avatar previews

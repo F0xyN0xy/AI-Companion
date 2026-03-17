@@ -34,4 +34,5 @@ contextBridge.exposeInMainWorld('electron', {
   // Updates
   installUpdate: () => ipcRenderer.send('install-update'),
   onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, d) => cb(d)),
+  getVersion: () => ipcRenderer.invoke('get-version'),
 });
