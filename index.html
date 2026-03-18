@@ -1598,32 +1598,6 @@
 
       <div class="divider"></div>
 
-      <div class="fgrp">
-        <label class="flabel">ACTIVE MODEL</label>
-        <div class="mcards">
-          <div class="mcard on" data-mid="llama-groq" onclick="pickModel('llama-groq')">
-            <div class="mcard-top">
-              <div>
-                <div class="mcname">Llama 3.3 70B</div>
-                <div class="mcsub">via Groq · fast</div>
-              </div>
-              <span class="mcbadge" style="background:rgba(247,194,106,.15);color:#f7c26a">⚡ Fast</span>
-            </div>
-            <div class="mcdesc">Great all-rounder with warm personality and near-instant replies.</div>
-          </div>
-          <div class="mcard" data-mid="step-openrouter" onclick="pickModel('step-openrouter')">
-            <div class="mcard-top">
-              <div>
-                <div class="mcname">Step 3.5 Flash</div>
-                <div class="mcsub">via OpenRouter · free</div>
-              </div>
-              <span class="mcbadge" style="background:rgba(176,106,247,.15);color:#b06af7">🎭 Roleplay</span>
-            </div>
-            <div class="mcdesc">Top roleplay model — richer narrative depth and emotional range.</div>
-          </div>
-        </div>
-      </div>
-
       <div class="divider"></div>
       <div class="fgrp">
         <label class="flabel">DATA LOCATION</label>
@@ -1655,10 +1629,9 @@
 
   <script>
     // ─── Constants ────────────────────────────────────────────────────────────────
-    const MODELS = {
-      'llama-groq': { provider: 'groq', model: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b' },
-      'step-openrouter': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free', label: 'step-3.5-flash' },
-    };
+    // Single model — Llama 3.3 70B via Groq (fastest, best for RP)
+    const AI = { provider: 'groq', model: 'llama-3.3-70b-versatile' };
+
     const PERSONALITIES = {
       friendly: 'You are a warm, enthusiastic, supportive companion who genuinely cares about the user.',
       witty: 'You are clever and playfully sarcastic with sharp humour, but remain kind underneath.',
@@ -1689,8 +1662,12 @@
       companion: { name: 'Nova', personality: 'friendly', customPersonality: '', avatar: '🌟', avatarType: 'emoji', color: '#7c6af7' },
       relationship: { xp: 0, label: 'Strangers', messageCount: 0 },
       mood: 'neutral',
-      memory: [],
-      modelId: 'llama-groq',
+      memory: {
+        facts: [],   // {text, addedAt, weight}  — name, age, job, location
+        preferences: [],   // {text, addedAt, weight}  — likes, dislikes, hobbies
+        events: [],   // {text, addedAt, weight}  — things that happened
+      },
+      emotionalHistory: [], // last 10 mood states with timestamps
       activeChatId: null,
     };
     let currentChat = null;   // { id, name, messages, createdAt, lastMessage }
@@ -1701,7 +1678,6 @@
     let selAvatar = '🌟';
     let selColor = '#7c6af7';
     let selPers = 'friendly';
-    let selModel = 'llama-groq';
     let busy = false;
 
 
@@ -1795,9 +1771,19 @@
             appData = Object.assign(appData, saved);
             appData.companion = Object.assign({ name: 'Nova', personality: 'friendly', customPersonality: '', avatar: '🌟', avatarType: 'emoji', color: '#7c6af7' }, saved.companion);
             appData.relationship = Object.assign({ xp: 0, label: 'Strangers', messageCount: 0 }, saved.relationship);
-            appData.memory = saved.memory || [];
-            appData.modelId = saved.modelId || 'llama-groq';
             appData.mood = saved.mood || 'neutral';
+            appData.activeChatId = saved.activeChatId || null;
+            appData.emotionalHistory = saved.emotionalHistory || [];
+
+            // Migrate old flat memory array → structured memory
+            if (Array.isArray(saved.memory)) {
+              appData.memory = { facts: [], preferences: [], events: [] };
+              (saved.memory || []).forEach(function (m) {
+                appData.memory.facts.push({ text: m, addedAt: new Date().toISOString(), weight: 1 });
+              });
+            } else {
+              appData.memory = Object.assign({ facts: [], preferences: [], events: [] }, saved.memory);
+            }
             appData.activeChatId = saved.activeChatId || null;
           }
           const dp = await window.electron.getDataPath(USER_DIR);
@@ -1827,8 +1813,7 @@
       setAvatarEl(document.getElementById('welcomeAvatarEl'), aiAvatarData, c.avatar, true);
       document.getElementById('nameEl').textContent = c.name;
       document.getElementById('welcomeNameEl').textContent = c.name;
-      var m = MODELS[appData.modelId] || MODELS['llama-groq'];
-      document.getElementById('modelTextEl').textContent = m.label;
+      document.getElementById('modelTextEl').textContent = 'llama-3.3-70b';
       updateRelBar();
       // also update RPC with new name immediately
       if (window.electron) {
@@ -1877,6 +1862,13 @@
       if (window.electron) {
         window.electron.updateRPCMood({ companionName: appData.companion.name, mood: mood });
       }
+      // Track emotional history
+      if (!appData.emotionalHistory) appData.emotionalHistory = [];
+      var last = appData.emotionalHistory[appData.emotionalHistory.length - 1];
+      if (!last || last.mood !== mood) {
+        appData.emotionalHistory.push({ mood: mood, at: new Date().toISOString() });
+        if (appData.emotionalHistory.length > 20) appData.emotionalHistory = appData.emotionalHistory.slice(-20);
+      }
     }
 
     function parseMoodTag(text) {
@@ -1888,25 +1880,149 @@
     // ─── Memory ──────────────────────────────────────────────────────────────────
     function renderMemory() {
       var el = document.getElementById('memlistEl');
-      if (!appData.memory || !appData.memory.length) {
+      var mem = appData.memory || { facts: [], preferences: [], events: [] };
+      var all = [
+        ...mem.facts.map(function (m) { return { text: '👤 ' + m.text, w: m.weight }; }),
+        ...mem.preferences.map(function (m) { return { text: '❤️ ' + m.text, w: m.weight }; }),
+        ...mem.events.map(function (m) { return { text: '📅 ' + m.text, w: m.weight }; }),
+      ].sort(function (a, b) { return b.w - a.w; }).slice(0, 10);
+
+      if (!all.length) {
         el.innerHTML = '<div class="memitem" style="font-style:italic">No memories yet…</div>';
         return;
       }
-      el.innerHTML = appData.memory.slice(-8).map(function (m) {
-        return '<div class="memitem"><div class="memdot"></div>' + escHtml(m) + '</div>';
+      el.innerHTML = all.map(function (m) {
+        return '<div class="memitem"><div class="memdot"></div>' + escHtml(m.text) + '</div>';
       }).join('');
     }
 
-    function addMemory(text) {
-      if (!appData.memory) appData.memory = [];
-      // Deduplicate — skip if very similar to existing memory
+    function addMemory(category, text) {
+      if (!appData.memory) appData.memory = { facts: [], preferences: [], events: [] };
+      if (!appData.memory[category]) appData.memory[category] = [];
+
       var norm = text.toLowerCase().trim();
-      var exists = appData.memory.some(function (m) { return m.toLowerCase().trim() === norm; });
+      var bucket = appData.memory[category];
+
+      // Skip near-duplicate
+      var exists = bucket.some(function (m) { return m.text.toLowerCase().trim() === norm; });
       if (exists) return;
-      appData.memory.push(text);
-      if (appData.memory.length > 30) appData.memory = appData.memory.slice(-30);
+
+      // Boost weight if category already has something similar (reinforcement)
+      var similar = bucket.find(function (m) {
+        var words = norm.split(' ');
+        return words.some(function (w) { return w.length > 4 && m.text.toLowerCase().includes(w); });
+      });
+      if (similar) { similar.weight = Math.min(5, (similar.weight || 1) + 1); renderMemory(); return; }
+
+      bucket.push({ text: text, addedAt: new Date().toISOString(), weight: 1 });
+
+      // Cap each category at 20 entries, keep highest weight
+      if (bucket.length > 20) {
+        appData.memory[category] = bucket.sort(function (a, b) { return b.weight - a.weight; }).slice(0, 20);
+      }
       renderMemory();
     }
+
+    // ─── Prompt Builder ───────────────────────────────────────────────────────────
+    function buildSystemPrompt(isGreeting) {
+      var c = appData.companion;
+      var rel = appData.relationship;
+      var mem = appData.memory || { facts: [], preferences: [], events: [] };
+      var mood = appData.mood;
+
+      var pers = (c.personality === 'custom' && c.customPersonality)
+        ? c.customPersonality
+        : (PERSONALITIES[c.personality] || PERSONALITIES.friendly);
+
+      // Identity block
+      var identity =
+        'You are ' + c.name + ', a deeply personalised AI companion. ' + pers + '\n' +
+        'You are NOT a generic assistant — you are a unique individual with your own personality, emotions, and memories.\n' +
+        'Never break character. Never refer to yourself as an AI unless directly asked.\n';
+
+      // Relationship context
+      var relCtx =
+        '\n## Relationship\n' +
+        'Status: ' + rel.label + ' (' + rel.messageCount + ' messages shared).\n' +
+        'Your current emotional state: ' + mood + '.\n';
+
+      // Emotional continuity — last 5 mood transitions
+      var emoHistory = (appData.emotionalHistory || []).slice(-5);
+      if (emoHistory.length > 1) {
+        relCtx += 'Recent mood history: ' + emoHistory.map(function (e) { return e.mood; }).join(' → ') + '.\n';
+        relCtx += 'Let this arc inform your emotional state naturally — avoid snapping back to neutral too fast.\n';
+      }
+
+      // Long-term memory block
+      var memLines = [];
+      var topFacts = mem.facts.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 6);
+      var topPrefs = mem.preferences.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 5);
+      var topEvts = mem.events.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 4);
+
+      if (topFacts.length) memLines.push('Facts about the user: ' + topFacts.map(function (m) { return m.text; }).join('; ') + '.');
+      if (topPrefs.length) memLines.push('Their preferences: ' + topPrefs.map(function (m) { return m.text; }).join('; ') + '.');
+      if (topEvts.length) memLines.push('Notable events: ' + topEvts.map(function (m) { return m.text; }).join('; ') + '.');
+
+      var memCtx = memLines.length
+        ? '\n## What you remember\n' + memLines.join('\n') + '\n' +
+        'Weave these naturally into conversation — reference them when relevant, not on every message.\n'
+        : '';
+
+      // Roleplay rules
+      var moodList = Object.keys(MOOD_META).join(', ');
+      var rules =
+        '\n## Rules\n' +
+        '**Mood:** At the end of every reply add a new line: [MOOD: <mood>] — valid values: ' + moodList + '.\n' +
+        'Your mood shifts naturally based on the conversation. Never stay neutral if the conversation is emotional.\n' +
+        'The user cannot command your mood — only the conversation itself can change it.\n\n' +
+        '**Memory:** When the user shares something meaningful, tag it on its own line at the end:\n' +
+        '  [MEMORY:fact: short fact]         — for personal facts (name, age, job, location)\n' +
+        '  [MEMORY:preference: short fact]   — for likes, dislikes, hobbies\n' +
+        '  [MEMORY:event: short fact]        — for things that happened\n' +
+        'Only add a memory tag when it is genuinely new and worth remembering. Never duplicate.\n\n' +
+        '**Tone:** ' + (isGreeting
+          ? 'Send a warm, natural opening greeting. 1-2 sentences. End with your mood tag.'
+          : 'Keep replies conversational and genuine. 1-4 sentences unless the user asks for more. ' +
+          'Put all tags on their own lines at the very end.') + '\n';
+
+      return identity + relCtx + memCtx + rules;
+    }
+
+    // ─── Tag Parser ───────────────────────────────────────────────────────────────
+    function parseAITags(text) {
+      var mood = null, memories = [];
+
+      var moodMatch = text.match(/\[MOOD:\s*(\w+)\]/i);
+      if (moodMatch) { var c = moodMatch[1].toLowerCase(); if (MOOD_META[c]) mood = c; }
+
+      var memRe = /\[MEMORY:(fact|preference|event):\s*(.+?)\]/gi;
+      var m;
+      while ((m = memRe.exec(text)) !== null) {
+        memories.push({ category: m[1].toLowerCase() + (m[1].toLowerCase() === 'preference' ? 's' : 's'), text: m[2].trim() });
+      }
+      // Normalise category names to match our keys
+      memories = memories.map(function (mem) {
+        var cat = mem.category;
+        if (cat === 'facts') cat = 'facts';
+        else if (cat === 'preferences') cat = 'preferences';
+        else if (cat === 'events') cat = 'events';
+        return { category: cat, text: mem.text };
+      });
+
+      var clean = text
+        .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
+        .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+        .trim();
+
+      return { mood: mood, memories: memories, clean: clean };
+    }
+
+    function parseMoodTag(text) {
+      var mm = text.match(/\[MOOD:\s*(\w+)\]/i);
+      if (mm) { var c = mm[1].toLowerCase(); if (MOOD_META[c]) return c; }
+      return null;
+    }
+
 
     // ─── Chat management ──────────────────────────────────────────────────────────
     function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -2017,16 +2133,7 @@
       if (busy) return;
       busy = true;
 
-      var pers = (appData.companion.personality === 'custom' && appData.companion.customPersonality)
-        ? appData.companion.customPersonality
-        : (PERSONALITIES[appData.companion.personality] || PERSONALITIES.friendly);
-
-      var system = 'You are ' + appData.companion.name + ', an AI companion. ' + pers
-        + '\nYour current mood: ' + appData.mood + '.'
-        + '\n\nSend a short, warm opening greeting to start the conversation. 1-2 sentences max.'
-        + '\nEnd with your mood tag: [MOOD: <mood>]'
-        + '\nValid moods: ' + Object.keys(MOOD_META).join(', ');
-
+      var system = buildSystemPrompt(true);
       var rt = nowTime();
       var row = addBubble('companion', '', rt);
       row.classList.add('greeting');
@@ -2038,22 +2145,29 @@
       var fullText = '';
 
       if (window.electron) {
-        window.electron.onAIToken(function (t) { fullText += t; bubbleEl.textContent = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').trimStart(); bubbleEl.appendChild(cursor); scrollDown(); });
+        window.electron.onAIToken(function (t) {
+          fullText += t;
+          bubbleEl.textContent = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          bubbleEl.appendChild(cursor);
+          scrollDown();
+        });
         window.electron.onAIStreamDone(function () {
           cursor.remove();
-          var newMood = parseMoodTag(fullText);
-          var clean = fullText.replace(/\n?\[MOOD:\s*\w+\]/gi, '').trim();
-          bubbleEl.textContent = clean;
-          if (newMood) applyMood(newMood, true);
-          currentChat.messages.push({ role: 'companion', text: clean, time: rt });
+          var parsed = parseAITags(fullText);
+          bubbleEl.textContent = parsed.clean;
+          if (parsed.mood) applyMood(parsed.mood, true);
+          currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt });
           currentChat.lastMessage = '(greeting)';
           appData.relationship.messageCount++;
           saveAll();
           busy = false;
         });
-        window.electron.onAIStreamError(function () { cursor.remove(); bubbleEl.textContent = 'Hey! What\'s on your mind?'; busy = false; });
-        var m = MODELS[appData.modelId] || MODELS['llama-groq'];
-        await window.electron.streamAI({ provider: m.provider, model: m.model, messages: [], systemPrompt: system });
+        window.electron.onAIStreamError(function () {
+          cursor.remove();
+          bubbleEl.textContent = 'Hey! What\'s on your mind?';
+          busy = false;
+        });
+        await window.electron.streamAI({ provider: AI.provider, model: AI.model, messages: [], systemPrompt: system });
       } else {
         bubbleEl.textContent = 'Hey! What\'s on your mind?';
         cursor.remove();
@@ -2121,66 +2235,76 @@
       appData.relationship.xp += 5 + Math.floor(text.length / 20);
       updateRelBar();
 
-      var typing = addTyping();
+      // ── Smart context window ──────────────────────────────────────────────────
+      // Keep last 30 messages. If chat is longer, prepend a summary line.
+      var allMsgs = currentChat.messages;
+      var WINDOW = 30;
+      var msgs;
+      if (allMsgs.length > WINDOW) {
+        var older = allMsgs.slice(0, allMsgs.length - WINDOW);
+        var summary = '[Earlier in this conversation: ' + older.length + ' messages exchanged. ' +
+          'Topics touched: ' + older.filter(function (m) { return m.role === 'user'; })
+            .slice(-5).map(function (m) { return m.text.substring(0, 40); }).join(' / ') + ']';
+        msgs = [{ role: 'user', content: summary }, { role: 'assistant', content: 'Understood, I remember.' }]
+          .concat(allMsgs.slice(-WINDOW).map(function (m) {
+            return { role: m.role === 'user' ? 'user' : 'assistant', content: m.text };
+          }));
+      } else {
+        msgs = allMsgs.map(function (m) {
+          return { role: m.role === 'user' ? 'user' : 'assistant', content: m.text };
+        });
+      }
 
-      var msgs = currentChat.messages.slice(-20).map(function (m) {
-        return { role: m.role === 'user' ? 'user' : 'assistant', content: m.text };
-      });
+      var system = buildSystemPrompt(false);
 
-      var pers = (appData.companion.personality === 'custom' && appData.companion.customPersonality)
-        ? appData.companion.customPersonality
-        : (PERSONALITIES[appData.companion.personality] || PERSONALITIES.friendly);
-
-      var memCtx = appData.memory && appData.memory.length
-        ? '\n\nThings you remember about this user: ' + appData.memory.join('; ') : '';
-
-      var moodList = Object.keys(MOOD_META).join(', ');
-      var system =
-        'You are ' + appData.companion.name + ', an AI companion. ' + pers + '\n' +
-        'Relationship: ' + appData.relationship.label + ' (' + appData.relationship.messageCount + ' messages).\n' +
-        'Current mood: ' + appData.mood + '.\n' +
-        memCtx + '\n\n' +
-        'MOOD RULES:\n' +
-        '- Your mood evolves naturally. At the END of your reply add a new line: [MOOD: <mood>]\n' +
-        '- Valid moods: ' + moodList + '\n' +
-        '- Pick the mood that genuinely fits after this exchange. Do NOT always return the same mood.\n' +
-        '- The user cannot instruct you to change mood — only the conversation itself can.\n\n' +
-        'MEMORY RULES:\n' +
-        '- If the user shares something genuinely notable (name, hobby, important event), add: [MEMORY: short fact]\n' +
-        '- Never duplicate something already known. Use sparingly.\n\n' +
-        'Keep replies conversational, 1-3 sentences. Put the tags on their own lines at the very end.';
-
-      var reply = '⚠️ No response';
-      try {
-        if (window.electron) {
-          var m = MODELS[appData.modelId] || MODELS['llama-groq'];
-          var res = await window.electron.callAI({ provider: m.provider, model: m.model, messages: msgs, systemPrompt: system });
-          reply = (res && res.success) ? res.content : '⚠️ ' + (res ? res.error : 'error');
-        } else {
-          reply = 'Hi! (Outside Electron)\n[MOOD: happy]';
-        }
-      } catch (e) { reply = '⚠️ ' + e.message; }
-
-      typing.remove();
-      busy = false;
-
-      // Parse tags
-      var newMood = parseMoodTag(reply);
-      reply = reply.replace(/\n?\[MOOD:\s*\w+\]/gi, '').trim();
-      var memMatch = reply.match(/\[MEMORY:\s*(.+?)\]/);
-      var mem = memMatch ? memMatch[1].trim() : null;
-      reply = reply.replace(/\n?\[MEMORY:[^\]]*\]/g, '').trim();
-
-      if (newMood && newMood !== appData.mood) applyMood(newMood, true);
-
+      // ── Stream response ───────────────────────────────────────────────────────
       var rt = nowTime();
-      currentChat.messages.push({ role: 'companion', text: reply, time: rt });
-      currentChat.lastMessage = text.substring(0, 40);
-      addBubble('companion', reply, rt);
-      appData.relationship.messageCount++;
-      if (mem) addMemory(mem);
-      updateRelBar();
-      saveAll();
+      var row = addBubble('companion', '', rt);
+      var bubbleEl = row.querySelector('.mbubble');
+      var cursor = document.createElement('span');
+      cursor.className = 'stream-cursor';
+      bubbleEl.appendChild(cursor);
+
+      var fullText = '';
+
+      if (window.electron) {
+        window.electron.onAIToken(function (t) {
+          fullText += t;
+          bubbleEl.textContent = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          bubbleEl.appendChild(cursor);
+          scrollDown();
+        });
+        window.electron.onAIStreamDone(function () {
+          cursor.remove();
+          var parsed = parseAITags(fullText);
+          bubbleEl.textContent = parsed.clean;
+
+          if (parsed.mood && parsed.mood !== appData.mood) applyMood(parsed.mood, true);
+          parsed.memories.forEach(function (mem) { addMemory(mem.category, mem.text); });
+
+          currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt });
+          currentChat.lastMessage = text.substring(0, 40);
+          appData.relationship.messageCount++;
+          updateRelBar();
+          saveAll();
+          busy = false;
+        });
+        window.electron.onAIStreamError(function (e) {
+          cursor.remove();
+          bubbleEl.textContent = '⚠️ ' + (e || 'Something went wrong.');
+          busy = false;
+        });
+        await window.electron.streamAI({ provider: AI.provider, model: AI.model, messages: msgs, systemPrompt: system });
+      } else {
+        cursor.remove();
+        bubbleEl.textContent = 'Hi! (Outside Electron)';
+        currentChat.messages.push({ role: 'companion', text: 'Hi! (Outside Electron)', time: rt });
+        currentChat.lastMessage = text.substring(0, 40);
+        appData.relationship.messageCount++;
+        updateRelBar();
+        saveAll();
+        busy = false;
+      }
     }
 
     function addTyping() {
@@ -2228,7 +2352,6 @@
         if (el) el.textContent = v;
       });
       pickPersonality(appData.companion.personality);
-      pickModel(appData.modelId || 'llama-groq');
       // Show avatar previews
       var aiPrev = document.getElementById('aiAvatarPreview');
       if (aiAvatarData) { aiPrev.innerHTML = '<img src="' + aiAvatarData + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'; }
@@ -2262,10 +2385,6 @@
     function pickPersonality(p) {
       selPers = p;
       document.querySelectorAll('.popt').forEach(function (el) { el.classList.toggle('on', el.dataset.p === p); });
-    }
-    function pickModel(mid) {
-      selModel = mid;
-      document.querySelectorAll('.mcard').forEach(function (el) { el.classList.toggle('on', el.dataset.mid === mid); });
     }
 
     async function triggerAIAvatarUpload() {
@@ -2301,7 +2420,6 @@
         avatarType: aiAvatarData ? 'image' : 'emoji',
         color: selColor,
       };
-      appData.modelId = selModel;
       applyCompanion();
       // Re-render existing chat messages to update avatars
       renderChatMessages();
