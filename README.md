@@ -6,7 +6,7 @@ An AI-powered desktop companion with persistent memory, mood system, relationshi
 
 ## Features
 
-- 🤖 **AI Chat** — Powered by Claude (claude-sonnet-4-20250514)
+- 🤖 **AI Chat** — Powered by OpenRouter and Groq
 - 🧠 **Persistent Memory** — Companion remembers important things you share
 - 💜 **Relationship System** — XP-based progression from Strangers → Soulmates
 - 😊 **Mood System** — Set your companion's mood; affects personality
@@ -22,8 +22,8 @@ An AI-powered desktop companion with persistent memory, mood system, relationshi
 npm install
 ```
 
-### 2. Get an Anthropic API Key
-- Visit [console.anthropic.com](https://console.anthropic.com)
+### 2. Get an OpenRouter API Key
+- Visit [OpenRouter.ai.api](https://openrouter.ai/settings/keys)
 - Create an API key and copy it
 
 ### 3. Set up Discord RPC (optional but fun!)
@@ -42,7 +42,7 @@ npm start
 
 ### 5. Configure in-app
 Click **⚙ Settings** and fill in:
-- Your Anthropic API key
+- Your OpenRouter API key
 - Your Discord Client ID (if using RPC)
 - Companion name, avatar, color, personality
 
