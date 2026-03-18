@@ -275,7 +275,10 @@ ipcMain.handle('auth-login', async (_, { email, password }) => {
 
     const userDir = getUserDir(user.email);
     const saved = loadData(userDir);
-    initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
+    // Small delay so Discord doesn't reject if previous session just closed
+    setTimeout(() => {
+      initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
+    }, 2000);
 
     // Navigate to main app
     mainWindow?.loadFile('index.html');
@@ -532,7 +535,10 @@ function createWindow() {
   if (session) {
     mainWindow.loadFile('index.html');
     const saved = loadData(getUserDir(session.user.email));
-    initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
+    // Delay RPC init by 3s — gives Discord time to clean up any previous connection
+    setTimeout(() => {
+      initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
+    }, 3000);
   } else {
     mainWindow.loadFile('login.html');
   }
@@ -569,8 +575,16 @@ app.whenReady().then(() => {
   setInterval(() => autoUpdater.checkForUpdates(), 2 * 60 * 60 * 1000);
 });
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
   if (verifyServer) verifyServer.close();
-  if (rpcClient) try { rpcClient.destroy(); } catch (e) { }
-  app.quit();
+  if (rpcClient) {
+    try {
+      await rpcClient.clearActivity();
+      await rpcClient.destroy();
+    } catch (e) { }
+    rpcClient = null;
+    rpcConnected = false;
+  }
+  // Small wait so Discord fully registers the disconnect before process exits
+  setTimeout(() => app.quit(), 500);
 });
