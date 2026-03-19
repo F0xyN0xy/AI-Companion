@@ -775,7 +775,13 @@
       font-size: 10px;
       color: var(--dim);
       margin-top: 3px;
-      padding: 0 2px
+      padding: 0 2px;
+      opacity: 0;
+      transition: opacity .2s
+    }
+
+    .mbubble-wrap:hover .mtime {
+      opacity: 1
     }
 
     .typing-dots {
@@ -1310,6 +1316,177 @@
       }
     }
 
+    /* Markdown in bubbles */
+    .mbubble b,
+    .mbubble strong {
+      font-weight: 600;
+    }
+
+    .mbubble em,
+    .mbubble i {
+      font-style: italic;
+    }
+
+    .mbubble code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: rgba(0, 0, 0, .25);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: #e8c97a;
+    }
+
+    .mbubble pre {
+      background: rgba(0, 0, 0, .3);
+      border-radius: 8px;
+      padding: 10px 13px;
+      margin: 6px 0;
+      overflow-x: auto;
+      border: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .mbubble pre code {
+      background: none;
+      padding: 0;
+      color: #b8d4a8;
+      font-size: 12px;
+    }
+
+    .mbubble p {
+      margin-bottom: 6px;
+    }
+
+    .mbubble p:last-child {
+      margin-bottom: 0;
+    }
+
+    .mbubble ul,
+    .mbubble ol {
+      padding-left: 18px;
+      margin: 4px 0;
+    }
+
+    .mbubble li {
+      margin-bottom: 3px;
+    }
+
+    .mbubble hr {
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, .1);
+      margin: 8px 0;
+    }
+
+    /* Reactions */
+    .reaction-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 5px;
+      flex-wrap: wrap;
+      opacity: 0;
+      transition: opacity .2s;
+      pointer-events: none;
+    }
+
+    .mbubble-wrap:hover .reaction-bar,
+    .reaction-bar.has-reactions {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .reaction-btn {
+      font-size: 13px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--dim);
+    }
+
+    .reaction-btn:hover {
+      border-color: var(--comp);
+      background: rgba(124, 106, 247, .1);
+    }
+
+    .reaction-btn.active {
+      border-color: var(--comp);
+      background: rgba(124, 106, 247, .18);
+      color: var(--text);
+    }
+
+    .reaction-btn .rcount {
+      font-size: 10px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Deep Talk badge */
+    .deep-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #a78bfa;
+      background: rgba(167, 139, 250, .12);
+      border: 1px solid rgba(167, 139, 250, .25);
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-bottom: 5px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Deep Talk toggle button */
+    #deepTalkBtn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--bg3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all .2s;
+      flex-shrink: 0;
+      title: 'Deep Talk mode';
+    }
+
+    #deepTalkBtn:hover {
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, .1);
+    }
+
+    #deepTalkBtn.active {
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, .18);
+      box-shadow: 0 0 10px rgba(167, 139, 250, .2);
+    }
+
+    #deepTalkBtn .dt-tooltip {
+      position: absolute;
+      bottom: 52px;
+      right: 0;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: var(--dim);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    #deepTalkBtn:hover .dt-tooltip {
+      opacity: 1;
+    }
+
+
     /* Pinned chat */
     .chat-item.pinned {
       border-color: rgba(124, 106, 247, .3);
@@ -1475,6 +1652,13 @@
       <div id="messages" style="display:none"></div>
 
       <div id="inputbar">
+        <div style="position:relative">
+          <button id="deepTalkBtn" onclick="toggleDeepTalk()"
+            title="Deep Talk — uses DeepSeek R1 for emotional/philosophical topics">
+            🌊
+            <span class="dt-tooltip">Deep Talk mode</span>
+          </button>
+        </div>
         <textarea id="msginput" placeholder="Say something…" rows="1" onkeydown="handleKey(event)"
           oninput="autoResize(this)"></textarea>
         <button id="sendbtn" onclick="sendMessage()">
@@ -1631,6 +1815,133 @@
     // ─── Constants ────────────────────────────────────────────────────────────────
     // Single model — Llama 3.3 70B via Groq (fastest, best for RP)
     const AI = { provider: 'groq', model: 'llama-3.3-70b-versatile' };
+    const AI_DEEP = { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct:free' };
+
+    // ─── Markdown renderer (lightweight, no library) ──────────────────────────────
+    function renderMarkdown(text) {
+      // Escape HTML first
+      var escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Code blocks (``` ... ```)
+      escaped = escaped.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang, code) {
+        return '<pre><code>' + code.trim() + '</code></pre>';
+      });
+
+      // Inline code
+      escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // Bold **text** or __text__
+      escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      escaped = escaped.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+      // Italic *text* or _text_
+      escaped = escaped.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+      escaped = escaped.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
+      // HR
+      escaped = escaped.replace(/^---$/gm, '<hr>');
+
+      // Unordered lists
+      escaped = escaped.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+      escaped = escaped.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+      // Line breaks → paragraphs
+      var paras = escaped.split(/\n\n+/);
+      escaped = paras.map(function (p) {
+        p = p.trim();
+        if (!p) return '';
+        if (p.startsWith('<pre>') || p.startsWith('<ul>') || p.startsWith('<hr>')) return p;
+        // Single newlines within a paragraph become <br>
+        return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+      }).filter(Boolean).join('');
+
+      return escaped;
+    }
+
+    // ─── Reactions ────────────────────────────────────────────────────────────────
+    const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '👏'];
+
+    function addReactionBar(row, msgIndex) {
+      var wrap = row.querySelector('.mbubble-wrap');
+      var bar = document.createElement('div');
+      bar.className = 'reaction-bar';
+      bar.dataset.msgIndex = msgIndex;
+
+      // Load existing reactions
+      var msg = currentChat && currentChat.messages ? currentChat.messages[msgIndex] : null;
+      var reactions = (msg && msg.reactions) ? msg.reactions : {};
+      if (Object.keys(reactions).length > 0) bar.classList.add('has-reactions');
+
+      REACTION_EMOJIS.forEach(function (emoji) {
+        var btn = document.createElement('button');
+        btn.className = 'reaction-btn' + (reactions[emoji] ? ' active' : '');
+        btn.innerHTML = emoji + (reactions[emoji] ? '<span class="rcount">' + reactions[emoji] + '</span>' : '');
+        btn.onclick = function () { toggleReaction(msgIndex, emoji, bar); };
+        bar.appendChild(btn);
+      });
+
+      wrap.appendChild(bar);
+    }
+
+    function toggleReaction(msgIndex, emoji, bar) {
+      if (!currentChat || !currentChat.messages) return;
+      var msg = currentChat.messages[msgIndex];
+      if (!msg) return;
+      if (!msg.reactions) msg.reactions = {};
+
+      if (msg.reactions[emoji]) {
+        delete msg.reactions[emoji];
+      } else {
+        msg.reactions[emoji] = 1;
+      }
+
+      // Re-render bar
+      var hasAny = Object.keys(msg.reactions).length > 0;
+      bar.classList.toggle('has-reactions', hasAny);
+      Array.from(bar.querySelectorAll('.reaction-btn')).forEach(function (btn) {
+        var e = btn.textContent.replace(/[0-9]/g, '').trim();
+        // match by first char
+        var match = REACTION_EMOJIS.find(function (r) { return btn.innerHTML.startsWith(r); });
+        if (!match) return;
+        var count = msg.reactions[match];
+        btn.className = 'reaction-btn' + (count ? ' active' : '');
+        btn.innerHTML = match + (count ? '<span class="rcount">' + count + '</span>' : '');
+        btn.onclick = function () { toggleReaction(msgIndex, match, bar); };
+      });
+
+      saveAll();
+    }
+
+    // ─── Deep Talk ────────────────────────────────────────────────────────────────
+    let deepTalkManual = false; // user forced it on
+
+    const DEEP_PATTERNS = [
+      /\b(depress|anxious|anxiety|lonely|alone|suicid|self.harm|trauma|abuse|grief|mourn|lost someone|died|death|dying|cancer|diagnos)\b/i,
+      /\b(meaning of life|purpose|existence|why am i|what's the point|feel empty|feel nothing|don't care anymore|give up|hopeless|worthless)\b/i,
+      /\b(relationship|breakup|broke up|divorce|cheated|betrayed|heartbroken|miss (you|him|her|them)|love (you|him|her))\b/i,
+      /\b(scared|terrified|overwhelmed|panic|crying|can't stop|don't know what to do|help me|please help)\b/i,
+      /\b(philosophy|consciousness|free will|god|universe|reality|time|identity|soul|afterlife|moral|ethics)\b/i,
+    ];
+
+    function isDeepMessage(text) {
+      if (deepTalkManual) return true;
+      var score = 0;
+      DEEP_PATTERNS.forEach(function (p) { if (p.test(text)) score++; });
+      // Also score by message length — long thoughtful messages lean deep
+      if (text.length > 200) score += 0.5;
+      if (text.split('?').length > 2) score += 0.5;
+      return score >= 1;
+    }
+
+    function toggleDeepTalk() {
+      deepTalkManual = !deepTalkManual;
+      var btn = document.getElementById('deepTalkBtn');
+      btn.classList.toggle('active', deepTalkManual);
+      btn.title = deepTalkManual ? 'Deep Talk ON — click to disable' : 'Deep Talk mode';
+    }
 
     const PERSONALITIES = {
       friendly: 'You are a warm, enthusiastic, supportive companion who genuinely cares about the user.',
@@ -2147,14 +2458,15 @@
       if (window.electron) {
         window.electron.onAIToken(function (t) {
           fullText += t;
-          bubbleEl.textContent = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          var preview = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          bubbleEl.innerHTML = renderMarkdown(preview);
           bubbleEl.appendChild(cursor);
           scrollDown();
         });
         window.electron.onAIStreamDone(function () {
           cursor.remove();
           var parsed = parseAITags(fullText);
-          bubbleEl.textContent = parsed.clean;
+          bubbleEl.innerHTML = renderMarkdown(parsed.clean);
           if (parsed.mood) applyMood(parsed.mood, true);
           currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt });
           currentChat.lastMessage = '(greeting)';
@@ -2181,12 +2493,15 @@
       var el = document.getElementById('messages');
       el.innerHTML = '';
       if (!currentChat) return;
-      (currentChat.messages || []).forEach(function (m) { addBubble(m.role, m.text, m.time); });
+      (currentChat.messages || []).forEach(function (m, i) {
+        addBubble(m.role, m.text, m.time, { msgIndex: i, deep: m.deep });
+      });
       scrollDown();
     }
 
     // ─── Messages ─────────────────────────────────────────────────────────────────
-    function addBubble(role, text, time) {
+    function addBubble(role, text, time, opts) {
+      opts = opts || {};
       var el = document.getElementById('messages');
       var row = document.createElement('div');
       row.className = 'mrow ' + (role === 'user' ? 'user' : 'companion');
@@ -2203,15 +2518,36 @@
 
       var wrap = document.createElement('div');
       wrap.className = 'mbubble-wrap';
+
+      // Deep Talk badge
+      if (opts.deep) {
+        var badge = document.createElement('div');
+        badge.className = 'deep-badge';
+        badge.innerHTML = '🌊 Deep Talk';
+        wrap.appendChild(badge);
+      }
+
       var bub = document.createElement('div');
       bub.className = 'mbubble';
-      bub.textContent = text;
+      if (text) {
+        bub.innerHTML = renderMarkdown(text);
+      }
+
       var ts = document.createElement('div');
       ts.className = 'mtime';
       ts.textContent = time || nowTime();
-      wrap.appendChild(bub); wrap.appendChild(ts);
-      row.appendChild(av); row.appendChild(wrap);
+
+      wrap.appendChild(bub);
+      wrap.appendChild(ts);
+      row.appendChild(av);
+      row.appendChild(wrap);
       el.appendChild(row);
+
+      // Add reaction bar for companion messages with a valid index
+      if (role === 'companion' && opts.msgIndex !== undefined) {
+        addReactionBar(row, opts.msgIndex);
+      }
+
       scrollDown();
       return row;
     }
@@ -2235,8 +2571,18 @@
       appData.relationship.xp += 5 + Math.floor(text.length / 20);
       updateRelBar();
 
+      // ── Detect deep mode ──────────────────────────────────────────────────────
+      var useDeep = isDeepMessage(text);
+      var model = useDeep ? AI_DEEP : AI;
+
+      // Flash the deep talk button if auto-triggered
+      if (useDeep && !deepTalkManual) {
+        var btn = document.getElementById('deepTalkBtn');
+        btn.classList.add('active');
+        setTimeout(function () { if (!deepTalkManual) btn.classList.remove('active'); }, 3000);
+      }
+
       // ── Smart context window ──────────────────────────────────────────────────
-      // Keep last 30 messages. If chat is longer, prepend a summary line.
       var allMsgs = currentChat.messages;
       var WINDOW = 30;
       var msgs;
@@ -2259,7 +2605,8 @@
 
       // ── Stream response ───────────────────────────────────────────────────────
       var rt = nowTime();
-      var row = addBubble('companion', '', rt);
+      var msgIndex = currentChat.messages.length; // index this reply will get
+      var row = addBubble('companion', '', rt, { deep: useDeep });
       var bubbleEl = row.querySelector('.mbubble');
       var cursor = document.createElement('span');
       cursor.className = 'stream-cursor';
@@ -2270,21 +2617,30 @@
       if (window.electron) {
         window.electron.onAIToken(function (t) {
           fullText += t;
-          bubbleEl.textContent = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          var preview = fullText
+            .replace(/\n?\[MOOD:[^\]]*\]/gi, '')
+            .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+            .trimStart();
+          // Render markdown live during streaming
+          bubbleEl.innerHTML = renderMarkdown(preview);
           bubbleEl.appendChild(cursor);
           scrollDown();
         });
         window.electron.onAIStreamDone(function () {
           cursor.remove();
           var parsed = parseAITags(fullText);
-          bubbleEl.textContent = parsed.clean;
+          bubbleEl.innerHTML = renderMarkdown(parsed.clean);
 
           if (parsed.mood && parsed.mood !== appData.mood) applyMood(parsed.mood, true);
           parsed.memories.forEach(function (mem) { addMemory(mem.category, mem.text); });
 
-          currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt });
+          currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt, deep: useDeep });
           currentChat.lastMessage = text.substring(0, 40);
           appData.relationship.messageCount++;
+
+          // Add reaction bar now that we have the index
+          addReactionBar(row, msgIndex);
+
           updateRelBar();
           saveAll();
           busy = false;
@@ -2294,11 +2650,16 @@
           bubbleEl.textContent = '⚠️ ' + (e || 'Something went wrong.');
           busy = false;
         });
-        await window.electron.streamAI({ provider: AI.provider, model: AI.model, messages: msgs, systemPrompt: system });
+        await window.electron.streamAI({
+          provider: model.provider,
+          model: model.model,
+          messages: msgs,
+          systemPrompt: system
+        });
       } else {
         cursor.remove();
         bubbleEl.textContent = 'Hi! (Outside Electron)';
-        currentChat.messages.push({ role: 'companion', text: 'Hi! (Outside Electron)', time: rt });
+        currentChat.messages.push({ role: 'companion', text: 'Hi! (Outside Electron)', time: rt, deep: false });
         currentChat.lastMessage = text.substring(0, 40);
         appData.relationship.messageCount++;
         updateRelBar();

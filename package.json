@@ -1,0 +1,77 @@
+{
+  "name": "ai-companion",
+  "version": "4.2.0",
+  "description": "AI Chat Companion",
+  "main": "main.js",
+  "author": "FoxyNoxy",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64 --publish always",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.aicompanion.app",
+    "productName": "AI Companion",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "login.html",
+      "privacy.html",
+      "terms.html",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron-builder/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "F0xyN0xy",
+      "repo": "AI-Companion",
+      "releaseType": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI Companion",
+      "license": "LICENSE.txt",
+      "installerHeader": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^16.4.5",
+    "electron-updater": "^6.1.7",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^8.0.3"
+  }
+}
