@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 /.qodo
+/package.json
+/package-lock.json
