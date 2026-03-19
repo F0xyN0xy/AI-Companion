@@ -1,21 +1,19 @@
 {
   "name": "ai-companion",
-  "version": "4.2.0",
-  "description": "AI Chat Companion",
+  "version": "4.2.1",
+  "description": "AI Chat Companion with Discord RPC",
   "main": "main.js",
   "author": "FoxyNoxy",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64 --publish always",
+    "build": "electron-builder --win --x64",
     "build:portable": "electron-builder --win portable --x64"
   },
   "build": {
     "appId": "com.aicompanion.app",
     "productName": "AI Companion",
     "copyright": "Copyright © 2026",
-    "directories": {
-      "output": "dist"
-    },
+    "directories": { "output": "dist" },
     "files": [
       "main.js",
       "preload.js",
@@ -28,26 +26,15 @@
       "!node_modules/electron-builder/**/*"
     ],
     "extraResources": [
-      {
-        "from": ".env",
-        "to": ".env"
-      }
+      { "from": ".env", "to": ".env" }
     ],
     "publish": {
       "provider": "github",
-      "owner": "F0xyN0xy",
-      "repo": "AI-Companion",
-      "releaseType": "release"
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "YOUR_GITHUB_REPO_NAME"
     },
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
@@ -63,8 +50,8 @@
     }
   },
   "devDependencies": {
-    "electron": "^41.0.3",
-    "electron-builder": "^26.8.1"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -72,6 +59,6 @@
     "dotenv": "^16.4.5",
     "electron-updater": "^6.1.7",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^8.0.3"
+    "nodemailer": "^6.9.9"
   }
 }

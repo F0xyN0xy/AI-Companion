@@ -22,6 +22,15 @@ let rpcConnected = false;
 let rpcStartTime = null;
 let verifyServer = null;
 
+// Safe send — guards against sending to a destroyed window
+function safeSend(channel, data) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send(channel, data);
+    }
+  } catch (e) { }
+}
+
 // ─── Credentials (all loaded from .env) ──────────────────────────────────────
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -189,7 +198,7 @@ function startVerifyServer() {
       res.end(verifyPage('✅ Email Verified!', `Welcome, ${user.firstName}! You can now close this tab and sign in.`, true));
 
       // Notify renderer to stop polling and show success
-      mainWindow?.webContents.send('email-verified', { email: user.email });
+      safeSend('email-verified', { email: user.email });
 
     } catch (e) {
       res.writeHead(500); res.end('Server error: ' + e.message);
@@ -412,16 +421,16 @@ async function initDiscordRPC(companionName, mood) {
     rpcClient.on('ready', () => {
       rpcConnected = true; rpcStartTime = new Date();
       setActivity(companionName, mood);
-      mainWindow?.webContents.send('rpc-status', { connected: true });
+      safeSend('rpc-status', { connected: true });
     });
     rpcClient.on('disconnected', () => {
       rpcConnected = false;
-      mainWindow?.webContents.send('rpc-status', { connected: false });
+      safeSend('rpc-status', { connected: false });
     });
     await rpcClient.login({ clientId: DISCORD_CLIENT_ID });
   } catch (e) {
     rpcConnected = false;
-    mainWindow?.webContents.send('rpc-status', { connected: false, error: e.message });
+    safeSend('rpc-status', { connected: false, error: e.message });
   }
 }
 
@@ -485,7 +494,7 @@ ipcMain.handle('stream-ai', async (_, { provider, model, messages, systemPrompt 
     }
     if (!response.ok) {
       const e = await response.json();
-      mainWindow?.webContents.send('ai-stream-error', e.error?.message || String(response.status));
+      safeSend('ai-stream-error', e.error?.message || String(response.status));
       return { success: false };
     }
     const reader = response.body.getReader();
@@ -504,14 +513,14 @@ ipcMain.handle('stream-ai', async (_, { provider, model, messages, systemPrompt 
         try {
           const json = JSON.parse(t.slice(6));
           const token = json.choices?.[0]?.delta?.content;
-          if (token) mainWindow?.webContents.send('ai-token', token);
+          if (token) safeSend('ai-token', token);
         } catch (e) { }
       }
     }
-    mainWindow?.webContents.send('ai-stream-done');
+    safeSend('ai-stream-done');
     return { success: true };
   } catch (e) {
-    mainWindow?.webContents.send('ai-stream-error', e.message);
+    safeSend('ai-stream-error', e.message);
     return { success: false, error: e.message };
   }
 });
@@ -558,12 +567,12 @@ app.whenReady().then(() => {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', () => {
-    mainWindow?.webContents.send('update-status', { status: 'downloading' });
+    safeSend('update-status', { status: 'downloading' });
   });
 
   autoUpdater.on('update-downloaded', () => {
     // Notify renderer so it can show an "Update ready" banner
-    mainWindow?.webContents.send('update-status', { status: 'ready' });
+    safeSend('update-status', { status: 'ready' });
   });
 
   autoUpdater.on('error', (err) => {
