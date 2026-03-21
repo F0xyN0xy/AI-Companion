@@ -1,6 +1,6 @@
 {
   "name": "ai-companion",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "AI Chat Companion with Discord RPC",
   "main": "main.js",
   "author": "FoxyNoxy",
@@ -36,8 +36,7 @@
     "publish": {
       "provider": "github",
       "owner": "F0xyN0xy",
-      "repo": "AI-Companion",
-      "releaseType": "release"
+      "repo": "AI-Companion"
     },
     "win": {
       "target": [
@@ -63,8 +62,8 @@
     }
   },
   "devDependencies": {
-    "electron": "^41.0.3",
-    "electron-builder": "^26.8.1"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -72,6 +71,6 @@
     "dotenv": "^16.4.5",
     "electron-updater": "^6.1.7",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^8.0.3"
+    "nodemailer": "^6.9.9"
   }
 }

@@ -2530,7 +2530,17 @@
       var bub = document.createElement('div');
       bub.className = 'mbubble';
       if (text) {
-        bub.innerHTML = renderMarkdown(text);
+        if (role === 'user') {
+          // Plain text for user — just escape HTML, no markdown
+          bub.textContent = text;
+        } else {
+          // Strip any leftover mood/memory tags before rendering markdown
+          var clean = text
+            .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
+            .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+            .trim();
+          bub.innerHTML = renderMarkdown(clean);
+        }
       }
 
       var ts = document.createElement('div');
