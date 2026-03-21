@@ -1633,7 +1633,6 @@
       <div id="chat-header">
         <div class="chat-header-left">
           <span class="ctitle" id="chatTitleEl" onclick="startRenameChat()" title="Click to rename">Chat</span>
-          <span class="modelbadge"><span class="dot"></span><span id="modelTextEl">llama-3.3-70b</span></span>
         </div>
         <div class="hbtns">
           <button class="export-btn" onclick="openExportMenu()" title="Export chat">⬇ Export</button>
@@ -2124,7 +2123,6 @@
       setAvatarEl(document.getElementById('welcomeAvatarEl'), aiAvatarData, c.avatar, true);
       document.getElementById('nameEl').textContent = c.name;
       document.getElementById('welcomeNameEl').textContent = c.name;
-      document.getElementById('modelTextEl').textContent = 'llama-3.3-70b';
       updateRelBar();
       // also update RPC with new name immediately
       if (window.electron) {
@@ -2322,7 +2320,9 @@
 
       var clean = text
         .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
+        .replace(/\n?MOOD:\s*\w+/gi, '')
         .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+        .replace(/\n?MEMORY:[^\n]*/gi, '')
         .trim();
 
       return { mood: mood, memories: memories, clean: clean };
@@ -2370,6 +2370,8 @@
       currentChat = chat;
       appData.activeChatId = id;
       saveAppData();
+      // Clear old messages before showing new chat
+      document.getElementById('messages').innerHTML = '';
       showChatView();
       await loadChatList();
       // Greet on new chat
@@ -2458,7 +2460,7 @@
       if (window.electron) {
         window.electron.onAIToken(function (t) {
           fullText += t;
-          var preview = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').trimStart();
+          var preview = fullText.replace(/\n?\[MOOD:[^\]]*\]/gi, '').replace(/\n?MOOD:\s*\w+/gi, '').replace(/\n?\[MEMORY:[^\]]*\]/gi, '').replace(/\n?MEMORY:[^\n]*/gi, '').trimStart();
           bubbleEl.innerHTML = renderMarkdown(preview);
           bubbleEl.appendChild(cursor);
           scrollDown();
@@ -2537,7 +2539,9 @@
           // Strip any leftover mood/memory tags before rendering markdown
           var clean = text
             .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
+            .replace(/\n?MOOD:\s*\w+/gi, '')
             .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+            .replace(/\n?MEMORY:[^\n]*/gi, '')
             .trim();
           bub.innerHTML = renderMarkdown(clean);
         }
@@ -2629,7 +2633,9 @@
           fullText += t;
           var preview = fullText
             .replace(/\n?\[MOOD:[^\]]*\]/gi, '')
+            .replace(/\n?MOOD:\s*\w+/gi, '')
             .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
+            .replace(/\n?MEMORY:[^\n]*/gi, '')
             .trimStart();
           // Render markdown live during streaming
           bubbleEl.innerHTML = renderMarkdown(preview);
