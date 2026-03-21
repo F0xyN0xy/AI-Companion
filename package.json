@@ -36,7 +36,8 @@
     "publish": {
       "provider": "github",
       "owner": "F0xyN0xy",
-      "repo": "AI-Companion"
+      "repo": "AI-Companion",
+      "releaseType": "release"
     },
     "win": {
       "target": [
@@ -62,8 +63,8 @@
     }
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -71,6 +72,6 @@
     "dotenv": "^16.4.5",
     "electron-updater": "^6.1.7",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.9"
+    "nodemailer": "^8.0.3"
   }
 }
