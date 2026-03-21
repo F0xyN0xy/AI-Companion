@@ -1452,7 +1452,7 @@
       font-size: 16px;
       transition: all .2s;
       flex-shrink: 0;
-      title: 'Deep Talk mode';
+      position: relative;
     }
 
     #deepTalkBtn:hover {
@@ -1468,18 +1468,20 @@
 
     #deepTalkBtn .dt-tooltip {
       position: absolute;
-      bottom: 52px;
-      right: 0;
+      bottom: 44px;
+      left: 50%;
+      transform: translateX(-50%);
       background: var(--bg2);
       border: 1px solid var(--bd);
       border-radius: 8px;
-      padding: 6px 10px;
+      padding: 5px 9px;
       font-size: 11px;
       color: var(--dim);
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity .15s;
+      z-index: 50;
     }
 
     #deepTalkBtn:hover .dt-tooltip {
@@ -1651,13 +1653,10 @@
       <div id="messages" style="display:none"></div>
 
       <div id="inputbar">
-        <div style="position:relative">
-          <button id="deepTalkBtn" onclick="toggleDeepTalk()"
-            title="Deep Talk — uses DeepSeek R1 for emotional/philosophical topics">
-            🌊
-            <span class="dt-tooltip">Deep Talk mode</span>
-          </button>
-        </div>
+        <button id="deepTalkBtn" onclick="toggleDeepTalk()" title="Deep Talk mode">
+          🌊
+          <span class="dt-tooltip">Deep Talk mode</span>
+        </button>
         <textarea id="msginput" placeholder="Say something…" rows="1" onkeydown="handleKey(event)"
           oninput="autoResize(this)"></textarea>
         <button id="sendbtn" onclick="sendMessage()">
