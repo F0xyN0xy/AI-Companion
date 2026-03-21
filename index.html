@@ -1669,6 +1669,25 @@
   </div>
 
 
+  <!-- Update overlay — Discord-style blocker -->
+  <div id="updateOverlay"
+    style="display:none;position:fixed;inset:0;background:#0b0b12;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#c8a96e;">✦ AI Companion</div>
+    <div id="updateTitle" style="font-size:15px;color:rgba(250,249,246,.8);font-family:'DM Sans',sans-serif;">Updating…
+    </div>
+    <div style="width:320px;background:rgba(255,255,255,.08);border-radius:100px;height:6px;overflow:hidden;">
+      <div id="updateBar"
+        style="height:100%;width:0%;background:linear-gradient(90deg,#7c6af7,#c8a96e);border-radius:100px;transition:width .3s ease;">
+      </div>
+    </div>
+    <div id="updateSub" style="font-size:12px;color:rgba(250,249,246,.35);font-family:'DM Sans',sans-serif;">Downloading
+      update…</div>
+    <button id="updateRestartBtn" onclick="window.electron.installUpdate()"
+      style="display:none;margin-top:8px;padding:11px 28px;background:#7c6af7;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:filter .15s;">
+      Restart & Install
+    </button>
+  </div>
+
   <!-- Export dropdown -->
   <div id="exportMenu"
     style="display:none;position:fixed;z-index:150;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:6px;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,.4)">
@@ -1688,8 +1707,6 @@
         <button class="modal-x" onclick="closeSettings()">✕</button>
       </div>
 
-      <div class="infobadge" style="background:rgba(58,165,92,.1);border:1px solid rgba(58,165,92,.25);color:#3ba55c;">✓
-        API keys configured</div>
       <div class="infobadge"
         style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.25);color:#8891f2;">🎮 Discord RPC
         active when Discord is open</div>
@@ -2102,6 +2119,7 @@
           userAvatarData = await window.electron.loadAsset(USER_DIR, 'avatar-user') || null;
         } catch (e) { console.error('init error:', e); }
         window.electron.onRPCStatus(handleRPCStatus);
+        window.electron.onUpdateStatus(handleUpdateStatus);
       }
       applyCompanion();
       applyMood(appData.mood, false);
@@ -2821,6 +2839,39 @@
       var dot = document.getElementById('rpcdotEl'), label = document.getElementById('rpclabelEl');
       dot.className = 'rpcdot' + (data.connected ? ' on' : '');
       label.textContent = data.connected ? 'Discord: active ✓' : 'Discord: ' + (data.error ? data.error.substring(0, 28) : 'not connected');
+    }
+
+    function handleUpdateStatus(data) {
+      var overlay = document.getElementById('updateOverlay');
+      var bar = document.getElementById('updateBar');
+      var title = document.getElementById('updateTitle');
+      var sub = document.getElementById('updateSub');
+      var restartBtn = document.getElementById('updateRestartBtn');
+
+      if (data.status === 'downloading') {
+        overlay.style.display = 'flex';
+        title.textContent = 'Update Available' + (data.version ? ' — v' + data.version : '');
+        sub.textContent = 'Downloading update…';
+        bar.style.width = '5%';
+        restartBtn.style.display = 'none';
+      } else if (data.status === 'progress') {
+        overlay.style.display = 'flex';
+        bar.style.width = data.percent + '%';
+        var speed = data.bytesPerSecond > 1024 * 1024
+          ? (data.bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s'
+          : (data.bytesPerSecond / 1024).toFixed(0) + ' KB/s';
+        sub.textContent = 'Downloading… ' + data.percent + '%  ·  ' + speed;
+      } else if (data.status === 'ready') {
+        overlay.style.display = 'flex';
+        bar.style.width = '100%';
+        title.textContent = 'Update Ready' + (data.version ? ' — v' + data.version : '');
+        sub.textContent = 'The update has been downloaded. Restart to apply it.';
+        restartBtn.style.display = 'block';
+      } else if (data.status === 'error') {
+        // Don't block the app on error — just hide the overlay
+        overlay.style.display = 'none';
+        console.warn('Update error:', data.message);
+      }
     }
 
     // ─── Utils ────────────────────────────────────────────────────────────────────

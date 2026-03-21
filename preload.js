@@ -19,9 +19,9 @@ contextBridge.exposeInMainWorld('electron', {
   // AI
   callAI: (o) => ipcRenderer.invoke('call-ai', o),
   streamAI: (o) => ipcRenderer.invoke('stream-ai', o),
-  onAIToken: (cb) => ipcRenderer.on('ai-token', (_, t) => cb(t)),
-  onAIStreamDone: (cb) => ipcRenderer.on('ai-stream-done', () => cb()),
-  onAIStreamError: (cb) => ipcRenderer.on('ai-stream-error', (_, e) => cb(e)),
+  onAIToken: (cb) => { ipcRenderer.removeAllListeners('ai-token'); ipcRenderer.on('ai-token', (_, t) => cb(t)); },
+  onAIStreamDone: (cb) => { ipcRenderer.removeAllListeners('ai-stream-done'); ipcRenderer.on('ai-stream-done', () => cb()); },
+  onAIStreamError: (cb) => { ipcRenderer.removeAllListeners('ai-stream-error'); ipcRenderer.on('ai-stream-error', (_, e) => cb(e)); },
   // RPC
   initRPC: (o) => ipcRenderer.invoke('init-rpc', o),
   updateRPCMood: (o) => ipcRenderer.invoke('update-rpc-mood', o),
