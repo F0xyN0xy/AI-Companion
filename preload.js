@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electron', {
   authRegister: (o) => ipcRenderer.invoke('auth-register', o),
   authCheckVerified: (o) => ipcRenderer.invoke('auth-check-verified', o),
   authLogout: () => ipcRenderer.invoke('auth-logout'),
+  authAddStrike: (o) => ipcRenderer.invoke('auth-add-strike', o),
   // Data
   loadData: (ud) => ipcRenderer.invoke('load-data', ud),
   saveData: (ud, d) => ipcRenderer.invoke('save-data', ud, d),

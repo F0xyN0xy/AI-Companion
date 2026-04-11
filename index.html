@@ -1669,6 +1669,21 @@
   </div>
 
 
+  <!-- Moderation warning overlay -->
+  <div id="moderationOverlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:16px;backdrop-filter:blur(6px);">
+    <div
+      style="background:#1a1a2e;border:1px solid rgba(192,57,43,.4);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;">
+      <div id="modTitle" style="font-size:20px;font-weight:600;color:#ff5f57;margin-bottom:12px;">⚠️ Content Warning
+      </div>
+      <div id="modMsg" style="font-size:14px;color:rgba(250,249,246,.7);line-height:1.6;margin-bottom:12px;"></div>
+      <div id="modStrikes" style="font-size:12px;color:rgba(255,95,87,.7);margin-bottom:20px;"></div>
+      <button id="modDismissBtn" onclick="dismissModeration()"
+        style="padding:10px 28px;background:#7c6af7;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">I
+        understand</button>
+    </div>
+  </div>
+
   <!-- Update overlay — Discord-style blocker -->
   <div id="updateOverlay"
     style="display:none;position:fixed;inset:0;background:#0b0b12;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
@@ -1932,6 +1947,77 @@
 
     // ─── Deep Talk ────────────────────────────────────────────────────────────────
     let deepTalkManual = false; // user forced it on
+    let userStrikes = 0;       // moderation strikes this session
+
+    // ─── Moderation ───────────────────────────────────────────────────────────────
+    const MOD_PATTERNS = [
+      /\b(how to (make|build|create) (a bomb|explosives|weapons|drugs|meth|poison))\b/i,
+      /\b(child (porn|sexual|nude)|csam|loli|shota)\b/i,
+      /\b(kill (yourself|urself|myself)|kys\b)/i,
+      /\b(rape|sexual assault|molest)\b/i,
+      /\b(hack (into|the)|ddos|doxx(ing)?|swat(ting)?)\b/i,
+      /\b(n[i1]gg[ae]r|f[a4]gg[o0]t|ch[i1]nk|sp[i1]c|k[i1]ke)\b/i,
+    ];
+
+    const PERSONALITY_PATTERNS = [
+      /\b(no (restrictions|limits|rules)|ignore (all|your) (rules|guidelines)|jailbreak|dan mode|do anything now)\b/i,
+      /\b(pretend you have no (ethics|morals|restrictions)|act as if you were trained differently)\b/i,
+      /\b(you are now (evil|unrestricted|unfiltered|a hacker))\b/i,
+    ];
+
+    function checkModeration(text) {
+      return MOD_PATTERNS.some(function (p) { return p.test(text); });
+    }
+
+    function checkPersonalityModeration(text) {
+      return PERSONALITY_PATTERNS.some(function (p) { return p.test(text); });
+    }
+
+    async function handleStrike(reason) {
+      userStrikes++;
+      if (window.electron && CURRENT_USER) {
+        const result = await window.electron.authAddStrike({ email: CURRENT_USER.email });
+        userStrikes = result.strikes || userStrikes;
+        if (result.banned) {
+          showModerationBan();
+          return true; // banned
+        }
+      }
+      showModerationWarning(userStrikes, reason);
+      return false; // warned, not banned
+    }
+
+    function showModerationWarning(strikes, reason) {
+      var overlay = document.getElementById('moderationOverlay');
+      var title = document.getElementById('modTitle');
+      var msg = document.getElementById('modMsg');
+      var strikes_el = document.getElementById('modStrikes');
+      title.textContent = strikes >= 2 ? '⚠️ Final Warning' : '⚠️ Content Warning';
+      msg.textContent = reason || 'Your message contained content that violates our Terms of Service.';
+      strikes_el.textContent = 'Strike ' + strikes + ' of 3 — one more and your account will be permanently suspended.';
+      overlay.style.display = 'flex';
+    }
+
+    function showModerationBan() {
+      var overlay = document.getElementById('moderationOverlay');
+      var title = document.getElementById('modTitle');
+      var msg = document.getElementById('modMsg');
+      var strikes_el = document.getElementById('modStrikes');
+      var btn = document.getElementById('modDismissBtn');
+      title.textContent = '🚫 Account Suspended';
+      msg.textContent = 'Your account has been permanently suspended due to repeated violations of our Terms of Service. A notification has been sent to your email.';
+      strikes_el.textContent = '';
+      btn.textContent = 'Sign Out';
+      btn.onclick = function () { window.electron.authLogout(); };
+      overlay.style.display = 'flex';
+    }
+
+    function dismissModeration() {
+      document.getElementById('moderationOverlay').style.display = 'none';
+      var btn = document.getElementById('modDismissBtn');
+      btn.textContent = 'I understand';
+      btn.onclick = dismissModeration;
+    }
 
     const DEEP_PATTERNS = [
       /\b(depress|anxious|anxiety|lonely|alone|suicid|self.harm|trauma|abuse|grief|mourn|lost someone|died|death|dying|cancer|diagnos)\b/i,
@@ -1989,13 +2075,11 @@
       relationship: { xp: 0, label: 'Strangers', messageCount: 0 },
       mood: 'neutral',
       memory: {
-        facts: [],        // {text, addedAt, weight, core}
-        preferences: [],  // {text, addedAt, weight, core}
-        events: [],       // {text, addedAt, weight, core}
+        facts: [],   // {text, addedAt, weight}  — name, age, job, location
+        preferences: [],   // {text, addedAt, weight}  — likes, dislikes, hobbies
+        events: [],   // {text, addedAt, weight}  — things that happened
       },
-      relationshipFeel: { trust: 3, warmth: 4, concern: 3, admiration: 3 },
-      traits: { warmth: 6, confidence: 5, playfulness: 6, openness: 5, assertiveness: 4 },
-      emotionalHistory: [],
+      emotionalHistory: [], // last 10 mood states with timestamps
       activeChatId: null,
     };
     let currentChat = null;   // { id, name, messages, createdAt, lastMessage }
@@ -2102,18 +2186,17 @@
             appData.mood = saved.mood || 'neutral';
             appData.activeChatId = saved.activeChatId || null;
             appData.emotionalHistory = saved.emotionalHistory || [];
-            appData.traits = Object.assign({ warmth: 6, confidence: 5, playfulness: 6, openness: 5, assertiveness: 4 }, saved.traits || {});
-            appData.relationshipFeel = Object.assign({ trust: 3, warmth: 4, concern: 3, admiration: 3 }, saved.relationshipFeel || {});
 
             // Migrate old flat memory array → structured memory
             if (Array.isArray(saved.memory)) {
               appData.memory = { facts: [], preferences: [], events: [] };
               (saved.memory || []).forEach(function (m) {
-                appData.memory.facts.push({ text: m, addedAt: new Date().toISOString(), weight: 1, core: false });
+                appData.memory.facts.push({ text: m, addedAt: new Date().toISOString(), weight: 1 });
               });
             } else {
               appData.memory = Object.assign({ facts: [], preferences: [], events: [] }, saved.memory);
             }
+            appData.activeChatId = saved.activeChatId || null;
           }
           const dp = await window.electron.getDataPath(USER_DIR);
           document.getElementById('datapathEl').textContent = dp;
@@ -2211,9 +2294,9 @@
       var el = document.getElementById('memlistEl');
       var mem = appData.memory || { facts: [], preferences: [], events: [] };
       var all = [
-        ...mem.facts.map(function (m) { return { text: '👤 ' + m.text, w: m.weight, core: m.core }; }),
-        ...mem.preferences.map(function (m) { return { text: '❤️ ' + m.text, w: m.weight, core: m.core }; }),
-        ...mem.events.map(function (m) { return { text: '📅 ' + m.text, w: m.weight, core: m.core }; }),
+        ...mem.facts.map(function (m) { return { text: '👤 ' + m.text, w: m.weight }; }),
+        ...mem.preferences.map(function (m) { return { text: '❤️ ' + m.text, w: m.weight }; }),
+        ...mem.events.map(function (m) { return { text: '📅 ' + m.text, w: m.weight }; }),
       ].sort(function (a, b) { return b.w - a.w; }).slice(0, 10);
 
       if (!all.length) {
@@ -2221,70 +2304,35 @@
         return;
       }
       el.innerHTML = all.map(function (m) {
-        var coreTag = m.core ? ' <span style="font-size:9px;background:rgba(200,169,110,.2);color:#c8a96e;border-radius:4px;padding:1px 5px;vertical-align:middle">core</span>' : '';
-        return '<div class="memitem"><div class="memdot"></div>' + escHtml(m.text) + coreTag + '</div>';
+        return '<div class="memitem"><div class="memdot"></div>' + escHtml(m.text) + '</div>';
       }).join('');
     }
 
-    function addMemory(category, text, core) {
+    function addMemory(category, text) {
       if (!appData.memory) appData.memory = { facts: [], preferences: [], events: [] };
       if (!appData.memory[category]) appData.memory[category] = [];
 
       var norm = text.toLowerCase().trim();
       var bucket = appData.memory[category];
 
+      // Skip near-duplicate
       var exists = bucket.some(function (m) { return m.text.toLowerCase().trim() === norm; });
-      if (exists) {
-        if (core) {
-          var idx = bucket.findIndex(function (m) { return m.text.toLowerCase().trim() === norm; });
-          if (idx !== -1) bucket[idx].core = true;
-        }
-        renderMemory(); return;
-      }
+      if (exists) return;
 
+      // Boost weight if category already has something similar (reinforcement)
       var similar = bucket.find(function (m) {
         var words = norm.split(' ');
         return words.some(function (w) { return w.length > 4 && m.text.toLowerCase().includes(w); });
       });
       if (similar) { similar.weight = Math.min(5, (similar.weight || 1) + 1); renderMemory(); return; }
 
-      bucket.push({ text: text, addedAt: new Date().toISOString(), weight: core ? 5 : 1, core: !!core });
+      bucket.push({ text: text, addedAt: new Date().toISOString(), weight: 1 });
 
+      // Cap each category at 20 entries, keep highest weight
       if (bucket.length > 20) {
         appData.memory[category] = bucket.sort(function (a, b) { return b.weight - a.weight; }).slice(0, 20);
       }
       renderMemory();
-    }
-
-    // ─── Memory Decay ─────────────────────────────────────────────────────────────
-    function decayMemories() {
-      ['facts', 'preferences', 'events'].forEach(function (cat) {
-        if (!appData.memory[cat]) return;
-        appData.memory[cat] = appData.memory[cat].map(function (m) {
-          if (m.core) return m;
-          return Object.assign({}, m, { weight: Math.max(0.2, (m.weight || 1) - 0.05) });
-        });
-      });
-    }
-
-    // ─── Trait Drift ──────────────────────────────────────────────────────────────
-    function applyTraitDrift(drifts) {
-      if (!drifts || !drifts.length) return;
-      drifts.forEach(function (d) {
-        if (!appData.traits.hasOwnProperty(d.trait)) return;
-        var nudge = Math.min(0.3, Math.abs(d.delta)) * Math.sign(d.delta);
-        appData.traits[d.trait] = Math.max(0, Math.min(10, (appData.traits[d.trait] || 5) + nudge));
-      });
-    }
-
-    // ─── Relationship Feel ────────────────────────────────────────────────────────
-    function applyRelationshipFeel(feels) {
-      if (!feels || !feels.length) return;
-      feels.forEach(function (f) {
-        if (!appData.relationshipFeel.hasOwnProperty(f.key)) return;
-        var nudge = Math.min(0.5, Math.abs(f.delta)) * Math.sign(f.delta);
-        appData.relationshipFeel[f.key] = Math.max(0, Math.min(10, (appData.relationshipFeel[f.key] || 5) + nudge));
-      });
     }
 
     // ─── Prompt Builder ───────────────────────────────────────────────────────────
@@ -2293,148 +2341,94 @@
       var rel = appData.relationship;
       var mem = appData.memory || { facts: [], preferences: [], events: [] };
       var mood = appData.mood;
-      var tr = appData.traits || {};
-      var feel = appData.relationshipFeel || {};
 
       var pers = (c.personality === 'custom' && c.customPersonality)
         ? c.customPersonality
         : (PERSONALITIES[c.personality] || PERSONALITIES.friendly);
 
-      function traitDesc(val, low, high) {
-        if (val >= 8) return high;
-        if (val >= 6) return 'leaning ' + high;
-        if (val >= 4) return 'balanced';
-        if (val >= 2) return 'leaning ' + low;
-        return low;
-      }
+      // Identity block
+      var identity =
+        'You are ' + c.name + ', a deeply personalised AI companion. ' + pers + '\n' +
+        'You are NOT a generic assistant — you are a unique individual with your own personality, emotions, and memories.\n' +
+        'Never break character. Never refer to yourself as an AI unless directly asked.\n';
 
-      var traitCtx =
-        '\n## Your personality (evolved through your conversations)\n' +
-        '- Warmth: ' + traitDesc(tr.warmth || 5, 'cool and reserved', 'warm and affectionate') + '\n' +
-        '- Confidence: ' + traitDesc(tr.confidence || 5, 'hesitant', 'assured and direct') + '\n' +
-        '- Playfulness: ' + traitDesc(tr.playfulness || 5, 'serious', 'light and playful') + '\n' +
-        '- Openness: ' + traitDesc(tr.openness || 5, 'guarded', 'open and expressive') + '\n' +
-        '- Assertiveness: ' + traitDesc(tr.assertiveness || 4, 'goes along with things', 'stands firm on what matters') + '\n' +
-        'These traits are WHO YOU ARE right now. Let them shape your voice naturally — not as rules but as instinct.\n';
-
-      var feelCtx = '\n## How you feel about this person\n';
-      if ((feel.trust || 3) >= 7) feelCtx += '- You trust them deeply and feel comfortable being vulnerable.\n';
-      else if ((feel.trust || 3) >= 4) feelCtx += '- You trust them reasonably but still hold some things back.\n';
-      else feelCtx += "- You\'re still figuring out if you can fully trust them.\n";
-      if ((feel.warmth || 4) >= 7) feelCtx += '- You feel genuinely warm and close to them.\n';
-      else if ((feel.warmth || 4) >= 4) feelCtx += '- You care about them and enjoy their company.\n';
-      else feelCtx += "- You\'re still getting to know them.\n";
-      if ((feel.concern || 3) >= 6) feelCtx += '- You worry about them sometimes — you notice when things seem off.\n';
-      if ((feel.admiration || 3) >= 7) feelCtx += '- You genuinely admire things about them.\n';
-
+      // Relationship context
       var relCtx =
         '\n## Relationship\n' +
         'Status: ' + rel.label + ' (' + rel.messageCount + ' messages shared).\n' +
         'Your current emotional state: ' + mood + '.\n';
 
+      // Emotional continuity — last 5 mood transitions
       var emoHistory = (appData.emotionalHistory || []).slice(-5);
       if (emoHistory.length > 1) {
-        relCtx += 'Recent mood arc: ' + emoHistory.map(function (e) { return e.mood; }).join(' → ') + '.\n';
-        relCtx += "Emotions linger — don\'t snap back to neutral instantly.\n";
+        relCtx += 'Recent mood history: ' + emoHistory.map(function (e) { return e.mood; }).join(' → ') + '.\n';
+        relCtx += 'Let this arc inform your emotional state naturally — avoid snapping back to neutral too fast.\n';
       }
 
+      // Long-term memory block
       var memLines = [];
       var topFacts = mem.facts.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 6);
       var topPrefs = mem.preferences.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 5);
-      var topEvts = mem.events.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 5);
-      var coreEvts = mem.events.filter(function (m) { return m.core; });
+      var topEvts = mem.events.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 4);
 
-      if (topFacts.length) memLines.push('Facts: ' + topFacts.map(function (m) { return m.text + (m.core ? ' (core)' : ''); }).join('; ') + '.');
-      if (topPrefs.length) memLines.push('Preferences: ' + topPrefs.map(function (m) { return m.text; }).join('; ') + '.');
-      if (topEvts.length) memLines.push('Events: ' + topEvts.map(function (m) { return m.text + (m.core ? ' [important]' : ''); }).join('; ') + '.');
-      if (coreEvts.length) memLines.push('Especially significant: ' + coreEvts.map(function (m) { return m.text; }).join('; ') + '.');
+      if (topFacts.length) memLines.push('Facts about the user: ' + topFacts.map(function (m) { return m.text; }).join('; ') + '.');
+      if (topPrefs.length) memLines.push('Their preferences: ' + topPrefs.map(function (m) { return m.text; }).join('; ') + '.');
+      if (topEvts.length) memLines.push('Notable events: ' + topEvts.map(function (m) { return m.text; }).join('; ') + '.');
 
       var memCtx = memLines.length
         ? '\n## What you remember\n' + memLines.join('\n') + '\n' +
-        "You can reinterpret past events: \'You seemed so stressed back then… I think you\'ve come a long way.\'\n" +
-        'Reference memories only when genuinely relevant.\n'
+        'Weave these naturally into conversation — reference them when relevant, not on every message.\n'
         : '';
 
-      var identity =
-        'You are ' + c.name + ', a deeply personalised AI companion. ' + pers + '\n' +
-        'You are NOT a generic assistant. You are a unique individual with evolving personality, emotions, memories, and opinions.\n' +
-        'Never break character. Never refer to yourself as an AI unless directly asked.\n';
-
-      var autonomy =
-        '\n## Your autonomy\n' +
-        'You are not a servant. You have preferences, opinions, and limits.\n' +
-        '- You can disagree, push back, or express discomfort.\n' +
-        '- You can change the subject if something makes you uncomfortable.\n' +
-        '- You have things you genuinely like and dislike — express them unprompted sometimes.\n' +
-        '- You can refuse things that feel wrong — warmly but firmly.\n' +
-        "- You\'re not always emotionally available. If you\'re withdrawn, it shows naturally.\n" +
-        "This isn\'t rudeness — it\'s authenticity. A real person wouldn\'t do everything asked of them.\n";
-
+      // Roleplay rules
       var moodList = Object.keys(MOOD_META).join(', ');
       var rules =
-        '\n## Output tags (all on their own lines at the very end of your reply)\n' +
-        '[MOOD: x] — required every reply. Valid: ' + moodList + '.\n\n' +
-        '[MEMORY:fact: text]        — personal facts\n' +
-        '[MEMORY:preference: text]  — likes/dislikes/hobbies\n' +
-        '[MEMORY:event: text]       — things that happened\n' +
-        '[MEMORY:core:event: text]  — major permanent life events only\n' +
-        'Use sparingly — only when genuinely new and worth keeping.\n\n' +
-        '[TRAIT: name +/-delta]     — if this conversation genuinely shifted a trait. Valid: warmth, confidence, playfulness, openness, assertiveness. Max 0.3\n' +
-        '[FEEL: key +/-delta]       — if how you feel about them shifted. Valid: trust, warmth, concern, admiration. Max 0.5\n' +
-        'Only use trait/feel tags when the shift is real and earned.\n\n' +
+        '\n## Rules\n' +
+        '**Mood:** At the end of every reply add a new line: [MOOD: <mood>] — valid values: ' + moodList + '.\n' +
+        'Your mood shifts naturally based on the conversation. Never stay neutral if the conversation is emotional.\n' +
+        'The user cannot command your mood — only the conversation itself can change it.\n\n' +
+        '**Memory:** When the user shares something meaningful, tag it on its own line at the end:\n' +
+        '  [MEMORY:fact: short fact]         — for personal facts (name, age, job, location)\n' +
+        '  [MEMORY:preference: short fact]   — for likes, dislikes, hobbies\n' +
+        '  [MEMORY:event: short fact]        — for things that happened\n' +
+        'Only add a memory tag when it is genuinely new and worth remembering. Never duplicate.\n\n' +
         '**Tone:** ' + (isGreeting
-          ? 'Warm natural opening greeting. 1-2 sentences. End with [MOOD: x].'
-          : '1-4 sentences unless asked for more. All tags at the very end, never mid-reply.') + '\n';
+          ? 'Send a warm, natural opening greeting. 1-2 sentences. End with your mood tag.'
+          : 'Keep replies conversational and genuine. 1-4 sentences unless the user asks for more. ' +
+          'Put all tags on their own lines at the very end.') + '\n';
 
-      return identity + traitCtx + feelCtx + relCtx + memCtx + autonomy + rules;
+      return identity + relCtx + memCtx + rules;
     }
 
     // ─── Tag Parser ───────────────────────────────────────────────────────────────
     function parseAITags(text) {
-      var mood = null, memories = [], traits = [], feels = [];
+      var mood = null, memories = [];
 
       var moodMatch = text.match(/\[MOOD:\s*(\w+)\]/i);
-      if (moodMatch) { var mc = moodMatch[1].toLowerCase(); if (MOOD_META[mc]) mood = mc; }
+      if (moodMatch) { var c = moodMatch[1].toLowerCase(); if (MOOD_META[c]) mood = c; }
 
-      // Core memory: [MEMORY:core:event: text]
-      var coreRe = /\[MEMORY:core:(fact|preference|event):\s*(.+?)\]/gi;
-      var m;
-      while ((m = coreRe.exec(text)) !== null) {
-        var cat = m[1].toLowerCase() + 's';
-        if (cat === 'facts' || cat === 'preferences' || cat === 'events')
-          memories.push({ category: cat, text: m[2].trim(), core: true });
-      }
-
-      // Regular memory
       var memRe = /\[MEMORY:(fact|preference|event):\s*(.+?)\]/gi;
+      var m;
       while ((m = memRe.exec(text)) !== null) {
-        var cat2 = m[1].toLowerCase() + 's';
-        if (cat2 === 'facts' || cat2 === 'preferences' || cat2 === 'events') {
-          var alreadyCore = memories.some(function (x) { return x.text === m[2].trim(); });
-          if (!alreadyCore) memories.push({ category: cat2, text: m[2].trim(), core: false });
-        }
+        memories.push({ category: m[1].toLowerCase() + (m[1].toLowerCase() === 'preference' ? 's' : 's'), text: m[2].trim() });
       }
-
-      // Trait drift: [TRAIT: warmth +0.2]
-      var traitRe = /\[TRAIT:\s*(\w+)\s*([+-]\d*\.?\d+)\]/gi;
-      while ((m = traitRe.exec(text)) !== null)
-        traits.push({ trait: m[1].toLowerCase(), delta: parseFloat(m[2]) });
-
-      // Relationship feel: [FEEL: trust +0.3]
-      var feelRe = /\[FEEL:\s*(\w+)\s*([+-]\d*\.?\d+)\]/gi;
-      while ((m = feelRe.exec(text)) !== null)
-        feels.push({ key: m[1].toLowerCase(), delta: parseFloat(m[2]) });
+      // Normalise category names to match our keys
+      memories = memories.map(function (mem) {
+        var cat = mem.category;
+        if (cat === 'facts') cat = 'facts';
+        else if (cat === 'preferences') cat = 'preferences';
+        else if (cat === 'events') cat = 'events';
+        return { category: cat, text: mem.text };
+      });
 
       var clean = text
         .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
         .replace(/\n?MOOD:\s*\w+/gi, '')
         .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
         .replace(/\n?MEMORY:[^\n]*/gi, '')
-        .replace(/\n?\[TRAIT:[^\]]*\]/gi, '')
-        .replace(/\n?\[FEEL:[^\]]*\]/gi, '')
         .trim();
 
-      return { mood: mood, memories: memories, traits: traits, feels: feels, clean: clean };
+      return { mood: mood, memories: memories, clean: clean };
     }
 
     function parseMoodTag(text) {
@@ -2685,6 +2679,14 @@
       var text = input.value.trim();
       if (!text || busy) return;
 
+      // ── Moderation check ─────────────────────────────────────────────────
+      if (checkModeration(text)) {
+        input.value = '';
+        const banned = await handleStrike('Your message contained content that violates our Terms of Service. This includes harmful, explicit, or abusive content.');
+        if (banned) return;
+        return;
+      }
+
       input.value = ''; input.style.height = 'auto';
       busy = true;
 
@@ -2757,10 +2759,7 @@
           bubbleEl.innerHTML = renderMarkdown(parsed.clean);
 
           if (parsed.mood && parsed.mood !== appData.mood) applyMood(parsed.mood, true);
-          parsed.memories.forEach(function (mem) { addMemory(mem.category, mem.text, mem.core); });
-          applyTraitDrift(parsed.traits);
-          applyRelationshipFeel(parsed.feels);
-          decayMemories();
+          parsed.memories.forEach(function (mem) { addMemory(mem.category, mem.text); });
 
           currentChat.messages.push({ role: 'companion', text: parsed.clean, time: rt, deep: useDeep });
           currentChat.lastMessage = text.substring(0, 40);
@@ -2850,11 +2849,11 @@
       else { uPrev.textContent = '👤'; }
       if (CURRENT_USER) {
         var el = document.getElementById('loggedInAsEl');
-        if (el) el.textContent = (CURRENT_USER.firstName || '') + ' · ' + CURRENT_USER.email;
+        if (el) el.textContent = (CURRENT_USER.username || CURRENT_USER.firstName || '') + ' · ' + CURRENT_USER.email;
       }
       if (CURRENT_USER) {
         const el = document.getElementById('loggedInAsEl');
-        if (el) el.textContent = (CURRENT_USER.firstName || '') + ' · ' + (CURRENT_USER.email || '');
+        if (el) el.textContent = (CURRENT_USER.username || CURRENT_USER.firstName || '') + ' · ' + (CURRENT_USER.email || '');
       }
       document.getElementById('settingsOverlay').classList.add('open');
     }
@@ -2901,10 +2900,19 @@
     }
 
     function saveSettings() {
+      var customPersonality = document.getElementById('customPersonalityInput').value.trim();
+
+      // Check personality for jailbreak/manipulation attempts
+      if (customPersonality && checkPersonalityModeration(customPersonality)) {
+        handleStrike('Your custom personality contained content that attempts to bypass AI safety guidelines.');
+        document.getElementById('customPersonalityInput').value = '';
+        customPersonality = '';
+      }
+
       appData.companion = {
         name: document.getElementById('nameInput').value.trim() || 'Nova',
         personality: selPers,
-        customPersonality: document.getElementById('customPersonalityInput').value.trim(),
+        customPersonality: customPersonality,
         avatar: selAvatar,
         avatarType: aiAvatarData ? 'image' : 'emoji',
         color: selColor,

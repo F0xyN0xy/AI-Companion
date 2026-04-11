@@ -128,15 +128,15 @@ function createTransport() {
   });
 }
 
-async function sendVerificationEmail(email, firstName, token) {
+async function sendVerificationEmail(email, username, token) {
   const link = `http://localhost:${VERIFY_PORT}/verify?token=${token}`;
   await createTransport().sendMail({
     from: `"AI Companion" <${GMAIL_USER}>`,
     to: email,
-    subject: 'Confirm your email',
+    subject: 'Confirm your email — AI Companion',
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
-        <h2 style="margin-bottom:8px">Hey ${firstName} 👋</h2>
+        <h2 style="margin-bottom:8px">Hey ${username} 👋</h2>
         <p style="color:#555;line-height:1.6">
           Thanks for signing up! Click below to confirm your email.
           This link expires in 24 hours and only works while the app is open.
@@ -153,6 +153,30 @@ async function sendVerificationEmail(email, firstName, token) {
       </div>
     `,
   });
+}
+
+async function sendBanEmail(email, username, reason) {
+  try {
+    await createTransport().sendMail({
+      from: `"AI Companion" <${GMAIL_USER}>`,
+      to: email,
+      subject: 'Your AI Companion account has been suspended',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+          <h2 style="margin-bottom:8px;color:#c0392b">Account Suspended</h2>
+          <p style="color:#555;line-height:1.6">Hi ${username},</p>
+          <p style="color:#555;line-height:1.6">
+            Your AI Companion account has been suspended due to repeated violations of our
+            <a href="https://ai-companion-nova.netlify.app/terms.html">Terms of Service</a>.
+          </p>
+          <p style="color:#555;line-height:1.6"><strong>Reason:</strong> ${reason}</p>
+          <p style="color:#555;line-height:1.6">
+            If you believe this is a mistake, please contact us by replying to this email.
+          </p>
+        </div>
+      `,
+    });
+  } catch (e) { console.error('Ban email failed:', e.message); }
 }
 
 // ─── Local verify HTTP server ─────────────────────────────────────────────────
@@ -195,7 +219,7 @@ function startVerifyServer() {
       await jsonbinWrite({ ...db, users });
 
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(verifyPage('✅ Email Verified!', `Welcome, ${user.firstName}! You can now close this tab and sign in.`, true));
+      res.end(verifyPage('✅ Email Verified!', `Welcome, ${user.username}! You can now close this tab and sign in.`, true));
 
       // Notify renderer to stop polling and show success
       safeSend('email-verified', { email: user.email });
@@ -226,14 +250,22 @@ ipcMain.handle('auth-get-session', () => {
   return { ...s, userDir: getUserDir(s.user.email) };
 });
 
-ipcMain.handle('auth-register', async (_, { email, password, firstName }) => {
+ipcMain.handle('auth-register', async (_, { email, password, username }) => {
   try {
     const db = await jsonbinRead();
     const users = db.users || [];
 
-    // Check duplicate
+    // Check duplicate email
     if (users.find(u => u.email === email.toLowerCase()))
       return { success: false, error: 'An account with that email already exists.' };
+
+    // Check duplicate username
+    if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase()))
+      return { success: false, error: 'That username is already taken.' };
+
+    // Validate username
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username))
+      return { success: false, error: 'Username must be 3-20 characters, letters/numbers/underscores only.' };
 
     const passwordHash = await bcrypt.hash(password, 12);
     const verifyToken = crypto.randomBytes(32).toString('hex');
@@ -242,16 +274,19 @@ ipcMain.handle('auth-register', async (_, { email, password, firstName }) => {
     users.push({
       id: crypto.randomUUID(),
       email: email.toLowerCase(),
-      firstName,
+      username,
       passwordHash,
       verified: false,
+      banned: false,
+      banReason: null,
+      strikes: 0,
       verifyToken,
       verifyExpires,
       createdAt: new Date().toISOString(),
     });
 
     await jsonbinWrite({ ...db, users });
-    await sendVerificationEmail(email, firstName, verifyToken);
+    await sendVerificationEmail(email, username, verifyToken);
 
     return { success: true };
   } catch (e) {
@@ -273,13 +308,16 @@ ipcMain.handle('auth-login', async (_, { email, password }) => {
     if (!user.verified)
       return { success: false, error: 'unverified', message: 'Please verify your email before signing in.' };
 
+    if (user.banned)
+      return { success: false, error: 'banned', message: `Your account has been suspended. Reason: ${user.banReason || 'Terms of Service violation'}` };
+
     const token = jwt.sign(
-      { userId: user.id, email: user.email, firstName: user.firstName },
+      { userId: user.id, email: user.email, username: user.username || user.firstName || 'User' },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    const userData = { email: user.email, firstName: user.firstName };
+    const userData = { email: user.email, username: user.username || user.firstName || 'User' };
     saveSession({ token, user: userData });
 
     const userDir = getUserDir(user.email);
@@ -398,6 +436,32 @@ function loadAsset(userDir, type) {
 
 // ─── IPC — data ───────────────────────────────────────────────────────────────
 ipcMain.handle('get-version', () => app.getVersion());
+
+ipcMain.handle('auth-add-strike', async (_, { email }) => {
+  try {
+    const db = await jsonbinRead();
+    const users = db.users || [];
+    const idx = users.findIndex(u => u.email === email.toLowerCase());
+    if (idx === -1) return { strikes: 0, banned: false };
+
+    users[idx].strikes = (users[idx].strikes || 0) + 1;
+    const strikes = users[idx].strikes;
+
+    if (strikes >= 3) {
+      users[idx].banned = true;
+      users[idx].banReason = 'Repeated inappropriate content violations (auto-ban after 3 strikes)';
+      users[idx].bannedAt = new Date().toISOString();
+      await jsonbinWrite({ ...db, users });
+      await sendBanEmail(users[idx].email, users[idx].username || 'User', users[idx].banReason);
+      return { strikes, banned: true };
+    }
+
+    await jsonbinWrite({ ...db, users });
+    return { strikes, banned: false };
+  } catch (e) {
+    return { strikes: 0, banned: false };
+  }
+});
 ipcMain.handle('load-data', (_, ud) => loadData(ud));
 ipcMain.handle('save-data', (_, ud, d) => { saveData(ud, d); return true; });
 ipcMain.handle('get-data-path', (_, ud) => ud);

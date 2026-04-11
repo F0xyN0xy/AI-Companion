@@ -531,6 +531,7 @@
 
         <div class="msg error" id="siErr"></div>
         <div class="msg success" id="siSuccess"></div>
+        <div class="msg error" id="siBanMsg" style="background:#2a0a0a;border-color:rgba(192,57,43,.4)"></div>
 
         <div class="field">
           <label class="field-label">Email</label>
@@ -565,15 +566,12 @@
 
         <div class="msg error" id="suErr"></div>
 
-        <div class="field-row">
-          <div class="field">
-            <label class="field-label">First name</label>
-            <input type="text" class="field-input" id="suFirst" placeholder="Alex" autocomplete="given-name">
-          </div>
-          <div class="field">
-            <label class="field-label">Last name</label>
-            <input type="text" class="field-input" id="suLast" placeholder="Smith" autocomplete="family-name">
-          </div>
+        <div class="field">
+          <label class="field-label">Username</label>
+          <input type="text" class="field-input" id="suUsername" placeholder="cooluser123" autocomplete="username"
+            maxlength="20">
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:5px">3–20 characters, letters/numbers/underscores
+            only</div>
         </div>
         <div class="field">
           <label class="field-label">Email</label>
@@ -612,7 +610,7 @@
       clearMsgs();
     }
     function clearMsgs() {
-      ['siErr', 'siSuccess', 'suErr'].forEach(id => { const el = document.getElementById(id); el.className = 'msg'; el.textContent = ''; });
+      ['siErr', 'siSuccess', 'suErr', 'siBanMsg'].forEach(id => { const el = document.getElementById(id); if (el) { el.className = 'msg'; el.textContent = ''; } });
       document.getElementById('siVerifyBox').classList.remove('show');
       document.getElementById('siPollMsg').textContent = '';
       if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
@@ -638,11 +636,15 @@
       btn.textContent = 'Sign in'; btn.disabled = false;
 
       if (!res.success) {
-        if (res.code === 'unverified') {
+        if (res.error === 'unverified') {
           pendingEmail = email;
           pendingPassword = password;
           document.getElementById('siVerifyBox').classList.add('show');
           startPolling();
+        } else if (res.error === 'banned') {
+          const banEl = document.getElementById('siBanMsg');
+          banEl.textContent = res.message || 'Your account has been suspended.';
+          banEl.classList.add('show');
         } else {
           showMsg('siErr', res.error || 'Invalid email or password.', 'error');
         }
@@ -655,17 +657,18 @@
     // ── Sign up ────────────────────────────────────────────────────────────────────
     async function doSignUp() {
       clearMsgs();
-      const firstName = document.getElementById('suFirst').value.trim();
+      const username = document.getElementById('suUsername').value.trim();
       const email = document.getElementById('suEmail').value.trim();
       const password = document.getElementById('suPassword').value;
 
-      if (!firstName || !email || !password) { showMsg('suErr', 'Please fill in all fields.', 'error'); return; }
+      if (!username || !email || !password) { showMsg('suErr', 'Please fill in all fields.', 'error'); return; }
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { showMsg('suErr', 'Username must be 3–20 characters, letters/numbers/underscores only.', 'error'); return; }
       if (password.length < 8) { showMsg('suErr', 'Password must be at least 8 characters.', 'error'); return; }
 
       const btn = document.getElementById('suBtn');
       btn.textContent = 'Creating account…'; btn.disabled = true;
 
-      const res = await window.electron.authRegister({ email, password, firstName });
+      const res = await window.electron.authRegister({ email, password, username });
 
       btn.textContent = 'Create account'; btn.disabled = false;
 

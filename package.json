@@ -1,6 +1,6 @@
 {
   "name": "ai-companion",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "AI Chat Companion with Discord RPC",
   "main": "main.js",
   "author": "FoxyNoxy",
@@ -52,14 +52,13 @@
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "AI Companion",
-      "license": "LICENSE.txt",
-      "installerHeader": "assets/icon.ico",
-      "deleteAppDataOnUninstall": false
+      "license": "LICENSE.txt"
     }
   },
   "devDependencies": {
