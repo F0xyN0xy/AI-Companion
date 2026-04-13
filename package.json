@@ -1,6 +1,6 @@
 {
   "name": "ai-companion",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI Chat Companion with Discord RPC",
   "main": "main.js",
   "author": "FoxyNoxy",
