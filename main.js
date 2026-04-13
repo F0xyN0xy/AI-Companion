@@ -476,11 +476,16 @@ ipcMain.handle('load-asset', (_, ud, type) => loadAsset(ud, type));
 let DiscordRPC;
 try { DiscordRPC = require('discord-rpc'); } catch (e) { }
 
+let rpcRegistered = false;
+
 async function initDiscordRPC(companionName, mood) {
   if (!DiscordRPC) return;
   try {
     if (rpcClient) { try { await rpcClient.destroy(); } catch (e) { } rpcClient = null; rpcConnected = false; }
-    DiscordRPC.register(DISCORD_CLIENT_ID);
+
+    // Register protocol only once per app lifetime
+    if (!rpcRegistered) { DiscordRPC.register(DISCORD_CLIENT_ID); rpcRegistered = true; }
+
     rpcClient = new DiscordRPC.Client({ transport: 'ipc' });
     rpcClient.on('ready', () => {
       rpcConnected = true; rpcStartTime = new Date();
@@ -489,12 +494,18 @@ async function initDiscordRPC(companionName, mood) {
     });
     rpcClient.on('disconnected', () => {
       rpcConnected = false;
+      rpcClient = null;
       safeSend('rpc-status', { connected: false });
+      // Retry after 30s in case Discord was just starting up
+      setTimeout(() => { if (!rpcConnected) initDiscordRPC(companionName, mood); }, 30000);
     });
     await rpcClient.login({ clientId: DISCORD_CLIENT_ID });
   } catch (e) {
     rpcConnected = false;
+    rpcClient = null;
     safeSend('rpc-status', { connected: false, error: e.message });
+    // Retry after 30s — Discord may not have been open yet
+    setTimeout(() => { if (!rpcConnected) initDiscordRPC(companionName, mood); }, 30000);
   }
 }
 

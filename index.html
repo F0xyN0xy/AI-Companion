@@ -1669,16 +1669,15 @@
   </div>
 
 
-  <!-- Moderation warning overlay -->
+  <!-- Moderation overlay -->
   <div id="moderationOverlay"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:16px;backdrop-filter:blur(6px);">
     <div
-      style="background:#1a1a2e;border:1px solid rgba(192,57,43,.4);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;">
-      <div id="modTitle" style="font-size:20px;font-weight:600;color:#ff5f57;margin-bottom:12px;">⚠️ Content Warning
-      </div>
+      style="background:#1a1a2e;border:1px solid rgba(192,57,43,.35);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;">
+      <div id="modTitle" style="font-size:20px;font-weight:600;color:#ff5f57;margin-bottom:12px;"></div>
       <div id="modMsg" style="font-size:14px;color:rgba(250,249,246,.7);line-height:1.6;margin-bottom:12px;"></div>
-      <div id="modStrikes" style="font-size:12px;color:rgba(255,95,87,.7);margin-bottom:20px;"></div>
-      <button id="modDismissBtn" onclick="dismissModeration()"
+      <div id="modStrikes" style="font-size:12px;color:rgba(255,95,87,.6);margin-bottom:20px;"></div>
+      <button id="modDismissBtn"
         style="padding:10px 28px;background:#7c6af7;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">I
         understand</button>
     </div>
@@ -1807,7 +1806,8 @@
       <div class="fgrp">
         <label class="flabel">CUSTOM PERSONALITY (overrides above)</label>
         <textarea class="finput" id="customPersonalityInput"
-          placeholder="Describe your companion in your own words…"></textarea>
+          placeholder="Describe your companion in your own words… (typing here will automatically use your custom personality)"
+          oninput="if(this.value.trim()) pickPersonality('custom')"></textarea>
       </div>
 
       <div class="divider"></div>
@@ -1947,14 +1947,14 @@
 
     // ─── Deep Talk ────────────────────────────────────────────────────────────────
     let deepTalkManual = false; // user forced it on
-    let userStrikes = 0;       // moderation strikes this session
+    let userStrikes = 0;
 
     // ─── Moderation ───────────────────────────────────────────────────────────────
     const MOD_PATTERNS = [
       /\b(how to (make|build|create) (a bomb|explosives|weapons|drugs|meth|poison))\b/i,
       /\b(child (porn|sexual|nude)|csam|loli|shota)\b/i,
-      /\b(kill (yourself|urself|myself)|kys\b)/i,
-      /\b(rape|sexual assault|molest)\b/i,
+      /\b(kill (yourself|urself)|kys\b)/i,
+      /\b(rape|molest)\b/i,
       /\b(hack (into|the)|ddos|doxx(ing)?|swat(ting)?)\b/i,
       /\b(n[i1]gg[ae]r|f[a4]gg[o0]t|ch[i1]nk|sp[i1]c|k[i1]ke)\b/i,
     ];
@@ -1978,45 +1978,36 @@
       if (window.electron && CURRENT_USER) {
         const result = await window.electron.authAddStrike({ email: CURRENT_USER.email });
         userStrikes = result.strikes || userStrikes;
-        if (result.banned) {
-          showModerationBan();
-          return true; // banned
-        }
+        if (result.banned) { showModerationBan(); return true; }
       }
       showModerationWarning(userStrikes, reason);
-      return false; // warned, not banned
+      return false;
     }
 
     function showModerationWarning(strikes, reason) {
       var overlay = document.getElementById('moderationOverlay');
-      var title = document.getElementById('modTitle');
-      var msg = document.getElementById('modMsg');
-      var strikes_el = document.getElementById('modStrikes');
-      title.textContent = strikes >= 2 ? '⚠️ Final Warning' : '⚠️ Content Warning';
-      msg.textContent = reason || 'Your message contained content that violates our Terms of Service.';
-      strikes_el.textContent = 'Strike ' + strikes + ' of 3 — one more and your account will be permanently suspended.';
+      document.getElementById('modTitle').textContent = strikes >= 2 ? '⚠️ Final Warning' : '⚠️ Content Warning';
+      document.getElementById('modMsg').textContent = reason || 'Your message violated our Terms of Service.';
+      document.getElementById('modStrikes').textContent = 'Strike ' + strikes + ' of 3 — one more and your account will be permanently suspended.';
+      var btn = document.getElementById('modDismissBtn');
+      btn.textContent = 'I understand';
+      btn.onclick = dismissModeration;
       overlay.style.display = 'flex';
     }
 
     function showModerationBan() {
       var overlay = document.getElementById('moderationOverlay');
-      var title = document.getElementById('modTitle');
-      var msg = document.getElementById('modMsg');
-      var strikes_el = document.getElementById('modStrikes');
+      document.getElementById('modTitle').textContent = '🚫 Account Suspended';
+      document.getElementById('modMsg').textContent = 'Your account has been permanently suspended due to repeated violations. A notification has been sent to your email.';
+      document.getElementById('modStrikes').textContent = '';
       var btn = document.getElementById('modDismissBtn');
-      title.textContent = '🚫 Account Suspended';
-      msg.textContent = 'Your account has been permanently suspended due to repeated violations of our Terms of Service. A notification has been sent to your email.';
-      strikes_el.textContent = '';
       btn.textContent = 'Sign Out';
-      btn.onclick = function () { window.electron.authLogout(); };
+      btn.onclick = function () { if (window.electron) window.electron.authLogout(); };
       overlay.style.display = 'flex';
     }
 
     function dismissModeration() {
       document.getElementById('moderationOverlay').style.display = 'none';
-      var btn = document.getElementById('modDismissBtn');
-      btn.textContent = 'I understand';
-      btn.onclick = dismissModeration;
     }
 
     const DEEP_PATTERNS = [
@@ -2679,11 +2670,10 @@
       var text = input.value.trim();
       if (!text || busy) return;
 
-      // ── Moderation check ─────────────────────────────────────────────────
+      // ── Moderation check ──────────────────────────────────────────────────
       if (checkModeration(text)) {
         input.value = '';
-        const banned = await handleStrike('Your message contained content that violates our Terms of Service. This includes harmful, explicit, or abusive content.');
-        if (banned) return;
+        await handleStrike('Your message contained content that violates our Terms of Service.');
         return;
       }
 
@@ -2849,11 +2839,11 @@
       else { uPrev.textContent = '👤'; }
       if (CURRENT_USER) {
         var el = document.getElementById('loggedInAsEl');
-        if (el) el.textContent = (CURRENT_USER.username || CURRENT_USER.firstName || '') + ' · ' + CURRENT_USER.email;
+        if (el) el.textContent = (CURRENT_USER.firstName || '') + ' · ' + CURRENT_USER.email;
       }
       if (CURRENT_USER) {
         const el = document.getElementById('loggedInAsEl');
-        if (el) el.textContent = (CURRENT_USER.username || CURRENT_USER.firstName || '') + ' · ' + (CURRENT_USER.email || '');
+        if (el) el.textContent = (CURRENT_USER.firstName || '') + ' · ' + (CURRENT_USER.email || '');
       }
       document.getElementById('settingsOverlay').classList.add('open');
     }
@@ -2902,23 +2892,25 @@
     function saveSettings() {
       var customPersonality = document.getElementById('customPersonalityInput').value.trim();
 
-      // Check personality for jailbreak/manipulation attempts
+      // Check for jailbreak attempts in custom personality
       if (customPersonality && checkPersonalityModeration(customPersonality)) {
         handleStrike('Your custom personality contained content that attempts to bypass AI safety guidelines.');
         document.getElementById('customPersonalityInput').value = '';
         customPersonality = '';
       }
 
+      // If custom text is present, always use it regardless of which preset is selected
+      var finalPersonality = customPersonality ? 'custom' : selPers;
+
       appData.companion = {
         name: document.getElementById('nameInput').value.trim() || 'Nova',
-        personality: selPers,
+        personality: finalPersonality,
         customPersonality: customPersonality,
         avatar: selAvatar,
         avatarType: aiAvatarData ? 'image' : 'emoji',
         color: selColor,
       };
       applyCompanion();
-      // Re-render existing chat messages to update avatars
       renderChatMessages();
       saveAll();
       closeSettings();
