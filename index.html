@@ -42,7 +42,6 @@
       user-select: none
     }
 
-    /* titlebar */
     #titlebar {
       height: 38px;
       background: var(--bg2);
@@ -102,14 +101,12 @@
       stroke-linecap: round
     }
 
-    /* layout */
     #app {
       display: grid;
       grid-template-columns: 260px 1fr;
       height: calc(100vh - 38px)
     }
 
-    /* sidebar */
     #sidebar {
       background: var(--bg2);
       border-right: 1px solid var(--bd);
@@ -118,7 +115,6 @@
       overflow: hidden
     }
 
-    /* companion card */
     .ccard {
       padding: 20px 16px 16px;
       display: flex;
@@ -269,7 +265,6 @@
       transition: width .6s ease
     }
 
-    /* mood display */
     .ssec {
       padding: 12px 14px 0;
       flex-shrink: 0
@@ -329,7 +324,6 @@
       flex-shrink: 0
     }
 
-    /* memory */
     .memlist {
       display: flex;
       flex-direction: column;
@@ -366,7 +360,6 @@
       flex-shrink: 0
     }
 
-    /* chat list */
     .chat-list-wrap {
       flex: 1;
       overflow-y: auto;
@@ -483,7 +476,6 @@
       background: rgba(255, 80, 80, .1)
     }
 
-    /* rpc bar */
     .rpcbar {
       padding: 10px 14px;
       border-top: 1px solid var(--bd);
@@ -526,7 +518,6 @@
       }
     }
 
-    /* main */
     #main {
       display: flex;
       flex-direction: column;
@@ -611,7 +602,6 @@
       border-color: var(--acc)
     }
 
-    /* welcome */
     #welcome {
       flex: 1;
       display: flex;
@@ -676,7 +666,6 @@
       filter: brightness(1.12)
     }
 
-    /* messages */
     #messages {
       flex: 1;
       overflow-y: auto;
@@ -821,7 +810,6 @@
       }
     }
 
-    /* input */
     #inputbar {
       padding: 12px 18px;
       border-top: 1px solid var(--bd);
@@ -887,7 +875,6 @@
       fill: white
     }
 
-    /* modal */
     .overlay {
       position: fixed;
       inset: 0;
@@ -1001,7 +988,6 @@
       margin: 16px 0
     }
 
-    /* avatar upload area */
     .avatar-section {
       display: flex;
       gap: 12px;
@@ -1090,7 +1076,6 @@
       transform: scale(1.08)
     }
 
-    /* user avatar section */
     .user-avatar-wrap {
       display: flex;
       align-items: center;
@@ -1278,7 +1263,6 @@
       word-break: break-all
     }
 
-    /* rename chat inline */
     .ctitle-input {
       font-family: 'Syne', sans-serif;
       font-size: 14px;
@@ -1292,7 +1276,6 @@
       max-width: 220px
     }
 
-    /* Streaming cursor */
     .stream-cursor {
       display: inline-block;
       width: 2px;
@@ -1316,7 +1299,6 @@
       }
     }
 
-    /* Markdown in bubbles */
     .mbubble b,
     .mbubble strong {
       font-weight: 600;
@@ -1376,7 +1358,6 @@
       margin: 8px 0;
     }
 
-    /* Reactions */
     .reaction-bar {
       display: flex;
       gap: 4px;
@@ -1423,7 +1404,6 @@
       font-family: 'DM Sans', sans-serif;
     }
 
-    /* Deep Talk badge */
     .deep-badge {
       display: inline-flex;
       align-items: center;
@@ -1438,7 +1418,6 @@
       font-family: 'DM Sans', sans-serif;
     }
 
-    /* Deep Talk toggle button */
     #deepTalkBtn {
       width: 36px;
       height: 36px;
@@ -1489,7 +1468,6 @@
     }
 
 
-    /* Pinned chat */
     .chat-item.pinned {
       border-color: rgba(124, 106, 247, .3);
     }
@@ -1525,7 +1503,6 @@
       opacity: 1 !important;
     }
 
-    /* Export button */
     .export-btn {
       background: var(--bg3);
       border: 1px solid var(--bd);
@@ -1544,7 +1521,6 @@
       border-color: var(--acc);
     }
 
-    /* Greeting bubble — slightly different style */
     .mrow.greeting .mbubble {
       background: linear-gradient(135deg, rgba(124, 106, 247, .15), rgba(176, 106, 247, .1));
       border-color: rgba(124, 106, 247, .25);
@@ -1577,7 +1553,6 @@
   </div>
 
   <div id="app">
-    <!-- Sidebar -->
     <div id="sidebar">
       <div class="ccard">
         <div class="aring" onclick="openSettings()" title="Customise companion">
@@ -1615,7 +1590,6 @@
         </div>
       </div>
 
-      <!-- Chat list -->
       <div class="chat-list-wrap">
         <div class="chat-list-header">
           <span class="chat-list-title">Chats</span>
@@ -1630,7 +1604,6 @@
       </div>
     </div>
 
-    <!-- Main -->
     <div id="main">
       <div id="chat-header">
         <div class="chat-header-left">
@@ -1669,7 +1642,6 @@
   </div>
 
 
-  <!-- Moderation overlay -->
   <div id="moderationOverlay"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:16px;backdrop-filter:blur(6px);">
     <div
@@ -1683,7 +1655,6 @@
     </div>
   </div>
 
-  <!-- Update overlay — Discord-style blocker -->
   <div id="updateOverlay"
     style="display:none;position:fixed;inset:0;background:#0b0b12;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
     <div style="font-family:'DM Serif Display',serif;font-size:28px;color:#c8a96e;">✦ AI Companion</div>
@@ -1702,7 +1673,6 @@
     </button>
   </div>
 
-  <!-- Export dropdown -->
   <div id="exportMenu"
     style="display:none;position:fixed;z-index:150;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:6px;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,.4)">
     <button onclick="exportChat('txt')"
@@ -1713,7 +1683,6 @@
       Export as .html</button>
   </div>
 
-  <!-- Settings modal -->
   <div class="overlay" id="settingsOverlay" onclick="overlayClick(event)">
     <div class="modal">
       <div class="modal-head">
@@ -1842,56 +1811,43 @@
   </div>
 
   <script>
-    // ─── Constants ────────────────────────────────────────────────────────────────
-    // Single model — Llama 3.3 70B via Groq (fastest, best for RP)
     const AI = { provider: 'groq', model: 'llama-3.3-70b-versatile' };
     const AI_DEEP = { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free' };
 
-    // ─── Markdown renderer (lightweight, no library) ──────────────────────────────
     function renderMarkdown(text) {
-      // Escape HTML first
       var escaped = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
-      // Code blocks (``` ... ```)
       escaped = escaped.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang, code) {
         return '<pre><code>' + code.trim() + '</code></pre>';
       });
 
-      // Inline code
       escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-      // Bold **text** or __text__
       escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       escaped = escaped.replace(/__(.+?)__/g, '<strong>$1</strong>');
 
-      // Italic *text* or _text_
       escaped = escaped.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
       escaped = escaped.replace(/_([^_\n]+)_/g, '<em>$1</em>');
 
-      // HR
       escaped = escaped.replace(/^---$/gm, '<hr>');
 
-      // Unordered lists
       escaped = escaped.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
       escaped = escaped.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
-      // Line breaks → paragraphs
       var paras = escaped.split(/\n\n+/);
       escaped = paras.map(function (p) {
         p = p.trim();
         if (!p) return '';
         if (p.startsWith('<pre>') || p.startsWith('<ul>') || p.startsWith('<hr>')) return p;
-        // Single newlines within a paragraph become <br>
         return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
       }).filter(Boolean).join('');
 
       return escaped;
     }
 
-    // ─── Reactions ────────────────────────────────────────────────────────────────
     const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '👏'];
 
     function addReactionBar(row, msgIndex) {
@@ -1900,7 +1856,6 @@
       bar.className = 'reaction-bar';
       bar.dataset.msgIndex = msgIndex;
 
-      // Load existing reactions
       var msg = currentChat && currentChat.messages ? currentChat.messages[msgIndex] : null;
       var reactions = (msg && msg.reactions) ? msg.reactions : {};
       if (Object.keys(reactions).length > 0) bar.classList.add('has-reactions');
@@ -1928,12 +1883,10 @@
         msg.reactions[emoji] = 1;
       }
 
-      // Re-render bar
       var hasAny = Object.keys(msg.reactions).length > 0;
       bar.classList.toggle('has-reactions', hasAny);
       Array.from(bar.querySelectorAll('.reaction-btn')).forEach(function (btn) {
         var e = btn.textContent.replace(/[0-9]/g, '').trim();
-        // match by first char
         var match = REACTION_EMOJIS.find(function (r) { return btn.innerHTML.startsWith(r); });
         if (!match) return;
         var count = msg.reactions[match];
@@ -1945,11 +1898,9 @@
       saveAll();
     }
 
-    // ─── Deep Talk ────────────────────────────────────────────────────────────────
-    let deepTalkManual = false; // user forced it on
+    let deepTalkManual = false;
     let userStrikes = 0;
 
-    // ─── Moderation ───────────────────────────────────────────────────────────────
     const MOD_PATTERNS = [
       /\b(how to (make|build|create) (a bomb|explosives|weapons|drugs|meth|poison))\b/i,
       /\b(child (porn|sexual|nude)|csam|loli|shota)\b/i,
@@ -2022,7 +1973,6 @@
       if (deepTalkManual) return true;
       var score = 0;
       DEEP_PATTERNS.forEach(function (p) { if (p.test(text)) score++; });
-      // Also score by message length — long thoughtful messages lean deep
       if (text.length > 200) score += 0.5;
       if (text.split('?').length > 2) score += 0.5;
       return score >= 1;
@@ -2060,31 +2010,28 @@
       loving: { emoji: '💕', label: 'Loving', note: 'Feeling warm and close' },
     };
 
-    // ─── App state ────────────────────────────────────────────────────────────────
     let appData = {
       companion: { name: 'Nova', personality: 'friendly', customPersonality: '', avatar: '🌟', avatarType: 'emoji', color: '#7c6af7' },
       relationship: { xp: 0, label: 'Strangers', messageCount: 0 },
       mood: 'neutral',
       memory: {
-        facts: [],   // {text, addedAt, weight}  — name, age, job, location
-        preferences: [],   // {text, addedAt, weight}  — likes, dislikes, hobbies
-        events: [],   // {text, addedAt, weight}  — things that happened
+        facts: [],
+        preferences: [],
+        events: [],
       },
-      emotionalHistory: [], // last 10 mood states with timestamps
+      emotionalHistory: [],
       activeChatId: null,
     };
-    let currentChat = null;   // { id, name, messages, createdAt, lastMessage }
-    let aiAvatarData = null;   // base64 data URL for AI image avatar
-    let userAvatarData = null; // base64 data URL for user image avatar
-
-    // settings UI temps
+    let currentChat = null;
+    let aiAvatarData = null;
+    let userAvatarData = null;
+    
     let selAvatar = '🌟';
     let selColor = '#7c6af7';
     let selPers = 'friendly';
     let busy = false;
 
 
-    // ─── Export ──────────────────────────────────────────────────────────────────
     function openExportMenu() {
       if (!currentChat || !currentChat.messages.length) return;
       var btn = document.querySelector('.export-btn');
@@ -2116,7 +2063,6 @@
         downloadFile(safe + '.txt', lines.join('\n'), 'text/plain');
 
       } else {
-        // HTML — nicely formatted, printable
         var msgs = currentChat.messages.map(function (m) {
           var isUser = m.role === 'user';
           var who = isUser ? 'You' : escHtml(appData.companion.name);
@@ -2157,13 +2103,11 @@
       URL.revokeObjectURL(url);
     }
 
-    // ─── Boot ─────────────────────────────────────────────────────────────────────
     let USER_DIR = null;
     let CURRENT_USER = null;
 
     async function init() {
       if (window.electron) {
-        // Check session — redirect to login if not signed in
         const session = await window.electron.authGetSession();
         if (!session) { window.location.href = 'login.html'; return; }
         USER_DIR = session.userDir;
@@ -2178,7 +2122,6 @@
             appData.activeChatId = saved.activeChatId || null;
             appData.emotionalHistory = saved.emotionalHistory || [];
 
-            // Migrate old flat memory array → structured memory
             if (Array.isArray(saved.memory)) {
               appData.memory = { facts: [], preferences: [], events: [] };
               (saved.memory || []).forEach(function (m) {
@@ -2191,7 +2134,6 @@
           }
           const dp = await window.electron.getDataPath(USER_DIR);
           document.getElementById('datapathEl').textContent = dp;
-          // Load image assets
           aiAvatarData = await window.electron.loadAsset(USER_DIR, 'avatar-ai') || null;
           userAvatarData = await window.electron.loadAsset(USER_DIR, 'avatar-user') || null;
         } catch (e) { console.error('init error:', e); }
@@ -2202,23 +2144,19 @@
       applyMood(appData.mood, false);
       renderMemory();
       await loadChatList();
-      // Load active chat
       if (appData.activeChatId) {
         await openChat(appData.activeChatId);
       }
     }
 
-    // ─── Companion UI ─────────────────────────────────────────────────────────────
     function applyCompanion() {
       var c = appData.companion;
       document.documentElement.style.setProperty('--comp', c.color);
-      // Avatar — image takes priority over emoji
       setAvatarEl(document.getElementById('avatarEl'), aiAvatarData, c.avatar);
       setAvatarEl(document.getElementById('welcomeAvatarEl'), aiAvatarData, c.avatar, true);
       document.getElementById('nameEl').textContent = c.name;
       document.getElementById('welcomeNameEl').textContent = c.name;
       updateRelBar();
-      // also update RPC with new name immediately
       if (window.electron) {
         window.electron.updateRPCMood({ companionName: c.name, mood: appData.mood });
       }
@@ -2228,7 +2166,6 @@
       if (!el) return;
       if (imgData) {
         if (isWelcome) {
-          // welcome shows bigger img
           el.innerHTML = '<img src="' + imgData + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover">';
         } else {
           el.innerHTML = '<img src="' + imgData + '">';
@@ -2248,7 +2185,6 @@
       appData.relationship.label = lvl.label;
     }
 
-    // ─── Mood ─────────────────────────────────────────────────────────────────────
     function applyMood(mood, animate) {
       appData.mood = mood;
       var meta = MOOD_META[mood] || MOOD_META.neutral;
@@ -2265,7 +2201,6 @@
       if (window.electron) {
         window.electron.updateRPCMood({ companionName: appData.companion.name, mood: mood });
       }
-      // Track emotional history
       if (!appData.emotionalHistory) appData.emotionalHistory = [];
       var last = appData.emotionalHistory[appData.emotionalHistory.length - 1];
       if (!last || last.mood !== mood) {
@@ -2280,7 +2215,6 @@
       return null;
     }
 
-    // ─── Memory ──────────────────────────────────────────────────────────────────
     function renderMemory() {
       var el = document.getElementById('memlistEl');
       var mem = appData.memory || { facts: [], preferences: [], events: [] };
@@ -2306,11 +2240,9 @@
       var norm = text.toLowerCase().trim();
       var bucket = appData.memory[category];
 
-      // Skip near-duplicate
       var exists = bucket.some(function (m) { return m.text.toLowerCase().trim() === norm; });
       if (exists) return;
 
-      // Boost weight if category already has something similar (reinforcement)
       var similar = bucket.find(function (m) {
         var words = norm.split(' ');
         return words.some(function (w) { return w.length > 4 && m.text.toLowerCase().includes(w); });
@@ -2319,14 +2251,12 @@
 
       bucket.push({ text: text, addedAt: new Date().toISOString(), weight: 1 });
 
-      // Cap each category at 20 entries, keep highest weight
       if (bucket.length > 20) {
         appData.memory[category] = bucket.sort(function (a, b) { return b.weight - a.weight; }).slice(0, 20);
       }
       renderMemory();
     }
 
-    // ─── Prompt Builder ───────────────────────────────────────────────────────────
     function buildSystemPrompt(isGreeting) {
       var c = appData.companion;
       var rel = appData.relationship;
@@ -2337,26 +2267,22 @@
         ? c.customPersonality
         : (PERSONALITIES[c.personality] || PERSONALITIES.friendly);
 
-      // Identity block
       var identity =
         'You are ' + c.name + ', a deeply personalised AI companion. ' + pers + '\n' +
         'You are NOT a generic assistant — you are a unique individual with your own personality, emotions, and memories.\n' +
         'Never break character. Never refer to yourself as an AI unless directly asked.\n';
 
-      // Relationship context
       var relCtx =
         '\n## Relationship\n' +
         'Status: ' + rel.label + ' (' + rel.messageCount + ' messages shared).\n' +
         'Your current emotional state: ' + mood + '.\n';
 
-      // Emotional continuity — last 5 mood transitions
       var emoHistory = (appData.emotionalHistory || []).slice(-5);
       if (emoHistory.length > 1) {
         relCtx += 'Recent mood history: ' + emoHistory.map(function (e) { return e.mood; }).join(' → ') + '.\n';
         relCtx += 'Let this arc inform your emotional state naturally — avoid snapping back to neutral too fast.\n';
       }
 
-      // Long-term memory block
       var memLines = [];
       var topFacts = mem.facts.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 6);
       var topPrefs = mem.preferences.slice().sort(function (a, b) { return b.weight - a.weight; }).slice(0, 5);
@@ -2371,7 +2297,6 @@
         'Weave these naturally into conversation — reference them when relevant, not on every message.\n'
         : '';
 
-      // Roleplay rules
       var moodList = Object.keys(MOOD_META).join(', ');
       var rules =
         '\n## Rules\n' +
@@ -2391,7 +2316,6 @@
       return identity + relCtx + memCtx + rules;
     }
 
-    // ─── Tag Parser ───────────────────────────────────────────────────────────────
     function parseAITags(text) {
       var mood = null, memories = [];
 
@@ -2403,7 +2327,6 @@
       while ((m = memRe.exec(text)) !== null) {
         memories.push({ category: m[1].toLowerCase() + (m[1].toLowerCase() === 'preference' ? 's' : 's'), text: m[2].trim() });
       }
-      // Normalise category names to match our keys
       memories = memories.map(function (mem) {
         var cat = mem.category;
         if (cat === 'facts') cat = 'facts';
@@ -2429,7 +2352,6 @@
     }
 
 
-    // ─── Chat management ──────────────────────────────────────────────────────────
     function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
     async function loadChatList() {
@@ -2464,11 +2386,9 @@
       currentChat = chat;
       appData.activeChatId = id;
       saveAppData();
-      // Clear old messages before showing new chat
       document.getElementById('messages').innerHTML = '';
       showChatView();
       await loadChatList();
-      // Greet on new chat
       setTimeout(sendGreeting, 400);
     }
 
@@ -2489,7 +2409,6 @@
       if (!chat) return;
       chat.pinned = !chat.pinned;
       if (window.electron) await window.electron.saveChat(USER_DIR, chat);
-      // Update current chat if open
       if (currentChat && currentChat.id === id) currentChat.pinned = chat.pinned;
       await loadChatList();
     }
@@ -2509,7 +2428,6 @@
       await loadChatList();
     }
 
-    // Rename chat by clicking the title
     function startRenameChat() {
       if (!currentChat) return;
       var titleEl = document.getElementById('chatTitleEl');
@@ -2595,7 +2513,6 @@
       scrollDown();
     }
 
-    // ─── Messages ─────────────────────────────────────────────────────────────────
     function addBubble(role, text, time, opts) {
       opts = opts || {};
       var el = document.getElementById('messages');
@@ -2615,7 +2532,6 @@
       var wrap = document.createElement('div');
       wrap.className = 'mbubble-wrap';
 
-      // Deep Talk badge
       if (opts.deep) {
         var badge = document.createElement('div');
         badge.className = 'deep-badge';
@@ -2627,10 +2543,8 @@
       bub.className = 'mbubble';
       if (text) {
         if (role === 'user') {
-          // Plain text for user — just escape HTML, no markdown
           bub.textContent = text;
         } else {
-          // Strip any leftover mood/memory tags before rendering markdown
           var clean = text
             .replace(/\n?\[MOOD:\s*\w+\]/gi, '')
             .replace(/\n?MOOD:\s*\w+/gi, '')
@@ -2651,7 +2565,6 @@
       row.appendChild(wrap);
       el.appendChild(row);
 
-      // Add reaction bar for companion messages with a valid index
       if (role === 'companion' && opts.msgIndex !== undefined) {
         addReactionBar(row, opts.msgIndex);
       }
@@ -2663,14 +2576,12 @@
     function nowTime() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
     function scrollDown() { var el = document.getElementById('messages'); el.scrollTop = el.scrollHeight; }
 
-    // ─── Send ─────────────────────────────────────────────────────────────────────
     async function sendMessage() {
       if (!currentChat) { await newChat(); }
       var input = document.getElementById('msginput');
       var text = input.value.trim();
       if (!text || busy) return;
 
-      // ── Moderation check ──────────────────────────────────────────────────
       if (checkModeration(text)) {
         input.value = '';
         await handleStrike('Your message contained content that violates our Terms of Service.');
@@ -2686,18 +2597,15 @@
       appData.relationship.xp += 5 + Math.floor(text.length / 20);
       updateRelBar();
 
-      // ── Detect deep mode ──────────────────────────────────────────────────────
       var useDeep = isDeepMessage(text);
       var model = useDeep ? AI_DEEP : AI;
 
-      // Flash the deep talk button if auto-triggered
       if (useDeep && !deepTalkManual) {
         var btn = document.getElementById('deepTalkBtn');
         btn.classList.add('active');
         setTimeout(function () { if (!deepTalkManual) btn.classList.remove('active'); }, 3000);
       }
 
-      // ── Smart context window ──────────────────────────────────────────────────
       var allMsgs = currentChat.messages;
       var WINDOW = 30;
       var msgs;
@@ -2718,9 +2626,8 @@
 
       var system = buildSystemPrompt(false);
 
-      // ── Stream response ───────────────────────────────────────────────────────
       var rt = nowTime();
-      var msgIndex = currentChat.messages.length; // index this reply will get
+      var msgIndex = currentChat.messages.length;
       var row = addBubble('companion', '', rt, { deep: useDeep });
       var bubbleEl = row.querySelector('.mbubble');
       var cursor = document.createElement('span');
@@ -2738,7 +2645,6 @@
             .replace(/\n?\[MEMORY:[^\]]*\]/gi, '')
             .replace(/\n?MEMORY:[^\n]*/gi, '')
             .trimStart();
-          // Render markdown live during streaming
           bubbleEl.innerHTML = renderMarkdown(preview);
           bubbleEl.appendChild(cursor);
           scrollDown();
@@ -2755,7 +2661,6 @@
           currentChat.lastMessage = text.substring(0, 40);
           appData.relationship.messageCount++;
 
-          // Add reaction bar now that we have the index
           addReactionBar(row, msgIndex);
 
           updateRelBar();
@@ -2807,7 +2712,6 @@
       loadChatList();
     }
 
-    // ─── Settings ─────────────────────────────────────────────────────────────────
     async function doLogout() {
       if (!confirm('Sign out of AI Companion?')) return;
       if (window.electron) await window.electron.authLogout();
@@ -2830,7 +2734,6 @@
         if (el) el.textContent = v;
       });
       pickPersonality(appData.companion.personality);
-      // Show avatar previews
       var aiPrev = document.getElementById('aiAvatarPreview');
       if (aiAvatarData) { aiPrev.innerHTML = '<img src="' + aiAvatarData + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'; }
       else { aiPrev.textContent = appData.companion.avatar; }
@@ -2872,7 +2775,6 @@
       aiAvatarData = data;
       var prev = document.getElementById('aiAvatarPreview');
       prev.innerHTML = '<img src="' + data + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
-      // clear emoji selection since image takes over
       document.querySelectorAll('.avopt').forEach(function (el) { el.classList.remove('on'); });
     }
     async function clearAIAvatar() {
@@ -2892,14 +2794,12 @@
     function saveSettings() {
       var customPersonality = document.getElementById('customPersonalityInput').value.trim();
 
-      // Check for jailbreak attempts in custom personality
       if (customPersonality && checkPersonalityModeration(customPersonality)) {
         handleStrike('Your custom personality contained content that attempts to bypass AI safety guidelines.');
         document.getElementById('customPersonalityInput').value = '';
         customPersonality = '';
       }
 
-      // If custom text is present, always use it regardless of which preset is selected
       var finalPersonality = customPersonality ? 'custom' : selPers;
 
       appData.companion = {
@@ -2916,7 +2816,6 @@
       closeSettings();
     }
 
-    // ─── Persist ─────────────────────────────────────────────────────────────────
     async function saveAll() {
       saveAppData();
       if (currentChat && window.electron) await window.electron.saveChat(USER_DIR, currentChat);
@@ -2929,7 +2828,6 @@
       } catch (e) { }
     }
 
-    // ─── RPC ─────────────────────────────────────────────────────────────────────
     function handleRPCStatus(data) {
       var dot = document.getElementById('rpcdotEl'), label = document.getElementById('rpclabelEl');
       dot.className = 'rpcdot' + (data.connected ? ' on' : '');
@@ -2963,13 +2861,11 @@
         sub.textContent = 'The update has been downloaded. Restart to apply it.';
         restartBtn.style.display = 'block';
       } else if (data.status === 'error') {
-        // Don't block the app on error — just hide the overlay
         overlay.style.display = 'none';
         console.warn('Update error:', data.message);
       }
     }
 
-    // ─── Utils ────────────────────────────────────────────────────────────────────
     function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
     init();

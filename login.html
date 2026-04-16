@@ -49,7 +49,6 @@
       user-select: none
     }
 
-    /* titlebar drag region */
     #titlebar {
       position: fixed;
       top: 0;
@@ -103,7 +102,6 @@
       stroke-linecap: round
     }
 
-    /* left panel */
     .panel-left {
       background: var(--ink);
       display: flex;
@@ -241,7 +239,6 @@
       flex-shrink: 0
     }
 
-    /* right panel */
     .panel-right {
       display: flex;
       flex-direction: column;
@@ -363,7 +360,6 @@
       color: var(--accent-deep)
     }
 
-    /* error / success / verify */
     .msg {
       font-size: 13px;
       border-radius: 7px;
@@ -484,7 +480,6 @@
     </div>
   </div>
 
-  <!-- Left panel -->
   <div class="panel-left">
     <div class="brand">
       <div class="brand-name">AI Companion</div>
@@ -518,11 +513,9 @@
     </div>
   </div>
 
-  <!-- Right panel -->
   <div class="panel-right">
     <div class="form-wrap">
 
-      <!-- Sign in form -->
       <div id="signinForm">
         <div class="form-header">
           <div class="form-title">Welcome back</div>
@@ -545,7 +538,6 @@
 
         <button class="submit-btn" id="siBtn" onclick="doSignIn()">Sign in</button>
 
-        <!-- Verify box — shown when account is unverified -->
         <div class="verify-box" id="siVerifyBox">
           <p>📧 Your email isn't verified yet. Check your inbox and click the link, then come back.</p>
           <button class="poll-btn" onclick="manualCheck()">✓ I've verified my email</button>
@@ -557,7 +549,6 @@
         </div>
       </div>
 
-      <!-- Sign up form -->
       <div id="signupForm" style="display:none">
         <div class="form-header">
           <div class="form-title">Create account</div>
@@ -598,7 +589,6 @@
     let pendingPassword = '';
     let pollInterval = null;
 
-    // ── Show/hide forms ────────────────────────────────────────────────────────────
     function showSignIn() {
       document.getElementById('signinForm').style.display = '';
       document.getElementById('signupForm').style.display = 'none';
@@ -621,7 +611,6 @@
       el.className = 'msg ' + type + ' show';
     }
 
-    // ── Sign in ────────────────────────────────────────────────────────────────────
     async function doSignIn() {
       clearMsgs();
       const email = document.getElementById('siEmail').value.trim();
@@ -651,10 +640,8 @@
         return;
       }
 
-      // Success — main.js already loaded index.html via the IPC response
     }
 
-    // ── Sign up ────────────────────────────────────────────────────────────────────
     async function doSignUp() {
       clearMsgs();
       const username = document.getElementById('suUsername').value.trim();
@@ -674,7 +661,6 @@
 
       if (!res.success) { showMsg('suErr', res.error || 'Something went wrong.', 'error'); return; }
 
-      // Switch to sign in and show verify prompt
       pendingEmail = email;
       pendingPassword = password;
       showSignIn();
@@ -685,7 +671,6 @@
       startPolling();
     }
 
-    // ── Email verification polling ─────────────────────────────────────────────────
     function startPolling() {
       if (pollInterval) clearInterval(pollInterval);
       pollInterval = setInterval(async () => {
@@ -693,7 +678,6 @@
         if (verified) {
           clearInterval(pollInterval); pollInterval = null;
           document.getElementById('siPollMsg').textContent = '✓ Verified! Signing you in…';
-          // Auto sign-in
           const res = await window.electron.authLogin({ email: pendingEmail, password: pendingPassword });
           if (!res.success) showMsg('siErr', 'Verified! Please sign in manually.', 'info');
         }

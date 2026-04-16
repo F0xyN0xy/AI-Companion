@@ -10,7 +10,6 @@ const http = require('http');
 const { URL } = require('url');
 const { autoUpdater } = require('electron-updater');
 
-// Load .env from app root (works both in dev and when packaged)
 const dotenvPath = app.isPackaged
   ? path.join(process.resourcesPath, '.env')
   : path.join(__dirname, '.env');
@@ -22,7 +21,6 @@ let rpcConnected = false;
 let rpcStartTime = null;
 let verifyServer = null;
 
-// Safe send — guards against sending to a destroyed window
 function safeSend(channel, data) {
   try {
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
@@ -31,25 +29,20 @@ function safeSend(channel, data) {
   } catch (e) { }
 }
 
-// ─── Credentials (all loaded from .env) ──────────────────────────────────────
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ─── JSONBin config ───────────────────────────────────────────────────────────
 const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
-// ─── Gmail config ─────────────────────────────────────────────────────────────
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_APP_PASS = process.env.GMAIL_APP_PASSWORD;
 
-// ─── Local verify server port ─────────────────────────────────────────────────
 const VERIFY_PORT = 3322;
 
-// ─── Base dir ─────────────────────────────────────────────────────────────────
 const BASE_DIR = path.join(os.homedir(), '.ai-companion');
 const SESSION_FILE = path.join(BASE_DIR, 'session.json');
 
@@ -57,7 +50,6 @@ function ensureBase() {
   if (!fs.existsSync(BASE_DIR)) fs.mkdirSync(BASE_DIR, { recursive: true });
 }
 
-// ─── Session ──────────────────────────────────────────────────────────────────
 function loadSession() {
   try {
     if (fs.existsSync(SESSION_FILE)) {
@@ -78,7 +70,6 @@ function clearSession() {
   try { if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE); } catch (e) { }
 }
 
-// ─── Per-user data paths ──────────────────────────────────────────────────────
 function getUserDir(email) {
   const safe = email.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   return path.join(BASE_DIR, 'users', safe);
@@ -90,7 +81,6 @@ function ensureDirs(userDir) {
   });
 }
 
-// ─── JSONBin helpers ──────────────────────────────────────────────────────────
 async function jsonbinRead() {
   const res = await fetch(JSONBIN_URL + '/latest', {
     headers: { 'X-Master-Key': JSONBIN_API_KEY },
@@ -109,7 +99,6 @@ async function jsonbinWrite(data) {
   if (!res.ok) throw new Error('JSONBin write failed: ' + res.status);
 }
 
-// Read users array, apply mutator fn, write back
 async function withUsers(fn) {
   const db = await jsonbinRead();
   const users = db.users || [];
@@ -118,7 +107,6 @@ async function withUsers(fn) {
   return result;
 }
 
-// ─── Email ────────────────────────────────────────────────────────────────────
 function createTransport() {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -179,7 +167,6 @@ async function sendBanEmail(email, username, reason) {
   } catch (e) { console.error('Ban email failed:', e.message); }
 }
 
-// ─── Local verify HTTP server ─────────────────────────────────────────────────
 function startVerifyServer() {
   if (verifyServer) return;
 
@@ -214,14 +201,12 @@ function startVerifyServer() {
         return;
       }
 
-      // Mark verified
       users[idx] = { ...user, verified: true, verifyToken: null, verifyExpires: null };
       await jsonbinWrite({ ...db, users });
 
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(verifyPage('✅ Email Verified!', `Welcome, ${user.username}! You can now close this tab and sign in.`, true));
 
-      // Notify renderer to stop polling and show success
       safeSend('email-verified', { email: user.email });
 
     } catch (e) {
@@ -243,7 +228,6 @@ function verifyPage(title, message, success) {
     </head><body><div class="box"><h1>${title}</h1><p>${message}</p></div></body></html>`;
 }
 
-// ─── IPC — auth ───────────────────────────────────────────────────────────────
 ipcMain.handle('auth-get-session', () => {
   const s = loadSession();
   if (!s) return null;
@@ -255,15 +239,12 @@ ipcMain.handle('auth-register', async (_, { email, password, username }) => {
     const db = await jsonbinRead();
     const users = db.users || [];
 
-    // Check duplicate email
     if (users.find(u => u.email === email.toLowerCase()))
       return { success: false, error: 'An account with that email already exists.' };
 
-    // Check duplicate username
     if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase()))
       return { success: false, error: 'That username is already taken.' };
 
-    // Validate username
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username))
       return { success: false, error: 'Username must be 3-20 characters, letters/numbers/underscores only.' };
 
@@ -322,12 +303,10 @@ ipcMain.handle('auth-login', async (_, { email, password }) => {
 
     const userDir = getUserDir(user.email);
     const saved = loadData(userDir);
-    // Small delay so Discord doesn't reject if previous session just closed
     setTimeout(() => {
       initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
     }, 2000);
 
-    // Navigate to main app
     mainWindow?.loadFile('index.html');
 
     return { success: true, user: userData, userDir };
@@ -352,7 +331,6 @@ ipcMain.handle('auth-logout', () => {
   rpcClient = null; rpcConnected = false;
 });
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 function loadData(userDir) {
   try {
     ensureDirs(userDir);
@@ -434,7 +412,6 @@ function loadAsset(userDir, type) {
   return null;
 }
 
-// ─── IPC — data ───────────────────────────────────────────────────────────────
 ipcMain.handle('get-version', () => app.getVersion());
 
 ipcMain.handle('auth-add-strike', async (_, { email }) => {
@@ -472,7 +449,6 @@ ipcMain.handle('delete-chat', (_, ud, id) => { deleteChat(ud, id); return true; 
 ipcMain.handle('pick-asset', async (_, ud, type) => pickAndSaveAsset(ud, type));
 ipcMain.handle('load-asset', (_, ud, type) => loadAsset(ud, type));
 
-// ─── Discord RPC ──────────────────────────────────────────────────────────────
 let DiscordRPC;
 try { DiscordRPC = require('discord-rpc'); } catch (e) { }
 
@@ -483,7 +459,6 @@ async function initDiscordRPC(companionName, mood) {
   try {
     if (rpcClient) { try { await rpcClient.destroy(); } catch (e) { } rpcClient = null; rpcConnected = false; }
 
-    // Register protocol only once per app lifetime
     if (!rpcRegistered) { DiscordRPC.register(DISCORD_CLIENT_ID); rpcRegistered = true; }
 
     rpcClient = new DiscordRPC.Client({ transport: 'ipc' });
@@ -496,7 +471,6 @@ async function initDiscordRPC(companionName, mood) {
       rpcConnected = false;
       rpcClient = null;
       safeSend('rpc-status', { connected: false });
-      // Retry after 30s in case Discord was just starting up
       setTimeout(() => { if (!rpcConnected) initDiscordRPC(companionName, mood); }, 30000);
     });
     await rpcClient.login({ clientId: DISCORD_CLIENT_ID });
@@ -504,7 +478,6 @@ async function initDiscordRPC(companionName, mood) {
     rpcConnected = false;
     rpcClient = null;
     safeSend('rpc-status', { connected: false, error: e.message });
-    // Retry after 30s — Discord may not have been open yet
     setTimeout(() => { if (!rpcConnected) initDiscordRPC(companionName, mood); }, 30000);
   }
 }
@@ -525,7 +498,6 @@ function setActivity(companionName, mood) {
 ipcMain.handle('init-rpc', async (_, { companionName, mood }) => { await initDiscordRPC(companionName, mood); return rpcConnected; });
 ipcMain.handle('update-rpc-mood', (_, { companionName, mood }) => { setActivity(companionName, mood); return true; });
 
-// ─── AI ───────────────────────────────────────────────────────────────────────
 ipcMain.handle('call-ai', async (_, { provider, model, messages, systemPrompt }) => {
   try {
     let response;
@@ -600,7 +572,6 @@ ipcMain.handle('stream-ai', async (_, { provider, model, messages, systemPrompt 
   }
 });
 
-// ─── Window ───────────────────────────────────────────────────────────────────
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) { app.quit(); }
 
@@ -619,7 +590,6 @@ function createWindow() {
   if (session) {
     mainWindow.loadFile('index.html');
     const saved = loadData(getUserDir(session.user.email));
-    // Delay RPC init by 3s — gives Discord time to clean up any previous connection
     setTimeout(() => {
       initDiscordRPC(saved?.companion?.name || 'Nova', saved?.mood || 'neutral');
     }, 3000);
@@ -637,7 +607,6 @@ app.whenReady().then(() => {
   startVerifyServer();
   createWindow();
 
-  // Auto-update — checks GitHub releases silently, prompts user when one is ready
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
@@ -658,7 +627,6 @@ app.whenReady().then(() => {
     console.log('Update error:', err.message);
   });
 
-  // Check for updates 3 seconds after launch, then every 2 hours
   setTimeout(() => autoUpdater.checkForUpdates(), 3000);
   setInterval(() => autoUpdater.checkForUpdates(), 2 * 60 * 60 * 1000);
 });
