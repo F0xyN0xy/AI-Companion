@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Companion — Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-muted: #6666aa;
+            --bg: #0f0f1a;
+            --bg2: #161625;
+            --bg3: #1e1e30;
+            --accent: #c8a96e;
+            --accent-deep: #9a7845;
+            --purple: #7c6af7;
+            --border: rgba(250, 249, 246, .08);
+            --border-strong: rgba(250, 249, 246, .14);
+            --text: rgba(250, 249, 246, .9);
+            --dim: rgba(250, 249, 246, .35);
+            --red: #ff5f57;
+            --green: #3ba55c;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text)
+        }
+
+        /* ── Login screen ─────────────────────────────── */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 340px;
+            padding: 40px;
+            background: var(--bg2);
+            border: 1px solid var(--border-strong);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .login-logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 22px;
+            color: var(--accent);
+            margin-bottom: 8px
+        }
+
+        .login-sub {
+            font-size: 13px;
+            color: var(--dim);
+            margin-bottom: 28px
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg3);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s;
+            margin-bottom: 12px;
+        }
+
+        .login-input:focus {
+            border-color: var(--accent)
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: var(--ink);
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: filter .15s;
+        }
+
+        .login-btn:hover {
+            filter: brightness(1.1)
+        }
+
+        .login-err {
+            font-size: 12px;
+            color: var(--red);
+            margin-top: 10px;
+            display: none
+        }
+
+        /* ── Main layout ──────────────────────────────── */
+        #adminApp {
+            display: none
+        }
+
+        header {
+            padding: 18px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg2);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 18px;
+            color: var(--accent)
+        }
+
+        .header-meta {
+            font-size: 12px;
+            color: var(--dim)
+        }
+
+        .logout-btn {
+            font-size: 12px;
+            color: var(--dim);
+            background: none;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all .15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .logout-btn:hover {
+            color: var(--text);
+            border-color: var(--border-strong)
+        }
+
+        .admin-body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px
+        }
+
+        /* ── Cards ────────────────────────────────────── */
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden
+        }
+
+        .card-head {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-head h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 18px;
+            font-weight: normal
+        }
+
+        .card-head span {
+            font-size: 12px;
+            color: var(--dim)
+        }
+
+        .card-body {
+            padding: 24px
+        }
+
+        /* ── Form elements ────────────────────────────── */
+        .field {
+            margin-bottom: 18px
+        }
+
+        .field label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 7px
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            padding: 10px 13px;
+            background: var(--bg3);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.6
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .btn {
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all .15s;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: var(--ink)
+        }
+
+        .btn-accent:hover {
+            filter: brightness(1.1)
+        }
+
+        .btn-ghost {
+            background: rgba(250, 249, 246, .06);
+            color: var(--text);
+            border: 1px solid var(--border-strong)
+        }
+
+        .btn-ghost:hover {
+            background: rgba(250, 249, 246, .1)
+        }
+
+        .btn-danger {
+            background: rgba(255, 95, 87, .1);
+            color: var(--red);
+            border: 1px solid rgba(255, 95, 87, .2)
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 95, 87, .18)
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px
+        }
+
+        /* ── Changelog entries ────────────────────────── */
+        .entry-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        .entry {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .entry-head {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .entry-head:hover {
+            background: rgba(250, 249, 246, .03)
+        }
+
+        .entry-info {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .entry-version {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            background: rgba(200, 169, 110, .1);
+            border: 1px solid rgba(200, 169, 110, .2);
+            border-radius: 6px;
+            padding: 2px 9px;
+        }
+
+        .entry-date {
+            font-size: 12px;
+            color: var(--dim)
+        }
+
+        .entry-badge-new {
+            font-size: 10px;
+            background: rgba(124, 106, 247, .15);
+            color: #a78bfa;
+            border: 1px solid rgba(124, 106, 247, .25);
+            border-radius: 4px;
+            padding: 1px 7px;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 6px
+        }
+
+        .entry-body {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            display: none
+        }
+
+        .entry-body.open {
+            display: block
+        }
+
+        /* ── Items list ───────────────────────────────── */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px
+        }
+
+        .item-row {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .item-row input {
+            flex: 1;
+            padding: 7px 11px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            outline: none
+        }
+
+        .item-row input:focus {
+            border-color: var(--accent)
+        }
+
+        /* ── Status bar ───────────────────────────────── */
+        .status {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            margin-top: 12px;
+        }
+
+        .status.ok {
+            background: rgba(59, 165, 92, .12);
+            border: 1px solid rgba(59, 165, 92, .25);
+            color: var(--green);
+            display: block
+        }
+
+        .status.err {
+            background: rgba(255, 95, 87, .1);
+            border: 1px solid rgba(255, 95, 87, .2);
+            color: var(--red);
+            display: block
+        }
+
+        .status.saving {
+            background: rgba(200, 169, 110, .08);
+            border: 1px solid rgba(200, 169, 110, .2);
+            color: var(--accent);
+            display: block
+        }
+
+        /* ── Settings ─────────────────────────────────── */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <div class="login-box">
+            <div class="login-logo">✦ AI Companion</div>
+            <div class="login-sub">Admin Panel — Enter password to continue</div>
+            <input type="password" class="login-input" id="pwInput" placeholder="Password"
+                onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="login-btn" onclick="doLogin()">Sign In</button>
+            <div class="login-err" id="loginErr">Incorrect password</div>
+        </div>
+    </div>
+
+    <!-- Admin App -->
+    <div id="adminApp">
+        <header>
+            <div class="header-logo">✦ Admin Panel</div>
+            <div class="header-meta" id="headerMeta">AI Companion Website</div>
+            <button class="logout-btn" onclick="doLogout()">Sign out</button>
+        </header>
+
+        <div class="admin-body">
+
+            <!-- JSONBin config notice -->
+            <div id="configNotice"
+                style="background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--accent)">
+                ⚙️ Fill in your JSONBin credentials in the <strong>Settings</strong> card below before making changes.
+            </div>
+
+            <!-- Changelog Editor -->
+            <div class="card">
+                <div class="card-head">
+                    <h2>Changelog</h2>
+                    <span id="changelogStatus">Loading…</span>
+                </div>
+                <div class="card-body">
+                    <div class="entry-list" id="entryList"></div>
+
+                    <!-- Add new release -->
+                    <details style="margin-bottom:16px">
+                        <summary
+                            style="cursor:pointer;font-size:13px;color:var(--accent);user-select:none;margin-bottom:14px">
+                            + Add new release</summary>
+                        <div
+                            style="margin-top:14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div class="field-row" style="margin-bottom:12px">
+                                <div class="field" style="margin:0">
+                                    <label>Version (e.g. v1.1.0)</label>
+                                    <input type="text" id="newVersion" placeholder="v1.1.0">
+                                </div>
+                                <div class="field" style="margin:0">
+                                    <label>Date (e.g. Apr 2026)</label>
+                                    <input type="text" id="newDate" placeholder="Apr 2026">
+                                </div>
+                            </div>
+                            <div class="field" style="margin-bottom:12px">
+                                <label>Changes (one per line)</label>
+                                <textarea id="newItems"
+                                    placeholder="Added something new&#10;Fixed a bug&#10;Improved performance"
+                                    style="min-height:100px"></textarea>
+                            </div>
+                            <label
+                                style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer;margin-bottom:14px">
+                                <input type="checkbox" id="newIsLatest" checked> Mark as latest
+                            </label>
+                            <button class="btn btn-accent" onclick="addEntry()">Add Release</button>
+                        </div>
+                    </details>
+
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <button class="btn btn-accent" onclick="saveChangelog()">Save & Publish</button>
+                        <button class="btn btn-ghost" onclick="loadData()">↺ Reload</button>
+                        <div class="status" id="changelogSaveStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero text editor -->
+            <div class="card">
+                <div class="card-head">
+                    <h2>Hero / Homepage Text</h2>
+                    <span>What visitors see first</span>
+                </div>
+                <div class="card-body">
+                    <div class="field">
+                        <label>Hero tagline (italic part)</label>
+                        <input type="text" id="heroTagline" placeholder="always there">
+                    </div>
+                    <div class="field">
+                        <label>Hero subtitle</label>
+                        <textarea id="heroSub" style="min-height:60px"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Small note below buttons</label>
+                        <input type="text" id="heroNote" placeholder="Free forever · Windows 10/11">
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <button class="btn btn-accent" onclick="saveHero()">Save & Publish</button>
+                        <div class="status" id="heroSaveStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links editor -->
+            <div class="card">
+                <div class="card-head">
+                    <h2>Links</h2>
+                    <span>itch.io, GitHub, etc.</span>
+                </div>
+                <div class="card-body">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>itch.io URL</label>
+                            <input type="url" id="linkItchio" placeholder="https://foxynet475.itch.io/AI-Companion">
+                        </div>
+                        <div class="field">
+                            <label>GitHub URL</label>
+                            <input type="url" id="linkGithub" placeholder="https://github.com/you/AI-Companion">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <button class="btn btn-accent" onclick="saveLinks()">Save & Publish</button>
+                        <div class="status" id="linksSaveStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <div class="card-head">
+                    <h2>Settings</h2>
+                    <span>JSONBin credentials (stored locally)</span>
+                </div>
+                <div class="card-body">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>JSONBin Bin ID (website content)</label>
+                            <input type="text" id="settingsBinId" placeholder="65f3a2...">
+                        </div>
+                        <div class="field">
+                            <label>JSONBin Master Key</label>
+                            <input type="password" id="settingsApiKey" placeholder="$2a$10$...">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Change admin password (leave blank to keep current)</label>
+                        <input type="password" id="settingsNewPw" placeholder="New password">
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <button class="btn btn-accent" onclick="saveSettings()">Save Settings</button>
+                        <div class="status" id="settingsSaveStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ── Auth ──────────────────────────────────────────────────────────────────────
+        const DEFAULT_PW_HASH = 'NaumburgerStr.12'; // Change this after first login via Settings
+        let ADMIN_PW = localStorage.getItem('ac_admin_pw') || DEFAULT_PW_HASH;
+
+        function doLogin() {
+            var pw = document.getElementById('pwInput').value;
+            if (pw === ADMIN_PW) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminApp').style.display = 'block';
+                loadSettings();
+                loadData();
+            } else {
+                document.getElementById('loginErr').style.display = 'block';
+                document.getElementById('pwInput').value = '';
+            }
+        }
+        function doLogout() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('adminApp').style.display = 'none';
+            document.getElementById('pwInput').value = '';
+        }
+        document.getElementById('pwInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        // ── Settings (stored in localStorage) ────────────────────────────────────────
+        function loadSettings() {
+            document.getElementById('settingsBinId').value = localStorage.getItem('ac_bin_id') || '';
+            document.getElementById('settingsApiKey').value = localStorage.getItem('ac_api_key') || '';
+            if (localStorage.getItem('ac_bin_id')) {
+                document.getElementById('configNotice').style.display = 'none';
+            }
+        }
+        function saveSettings() {
+            var binId = document.getElementById('settingsBinId').value.trim();
+            var apiKey = document.getElementById('settingsApiKey').value.trim();
+            var newPw = document.getElementById('settingsNewPw').value;
+
+            if (binId) localStorage.setItem('ac_bin_id', binId);
+            if (apiKey) localStorage.setItem('ac_api_key', apiKey);
+            if (newPw) { localStorage.setItem('ac_admin_pw', newPw); ADMIN_PW = newPw; }
+
+            showStatus('settingsSaveStatus', 'ok', '✓ Settings saved locally');
+            if (binId) document.getElementById('configNotice').style.display = 'none';
+        }
+
+        // ── JSONBin helpers ────────────────────────────────────────────────────────────
+        function getBinConfig() {
+            return {
+                binId: localStorage.getItem('ac_bin_id'),
+                apiKey: localStorage.getItem('ac_api_key'),
+            };
+        }
+
+        async function jsonbinRead() {
+            var { binId, apiKey } = getBinConfig();
+            if (!binId || !apiKey) throw new Error('JSONBin not configured — fill in Settings first');
+            var r = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
+                headers: { 'X-Master-Key': apiKey }
+            });
+            if (!r.ok) throw new Error('Read failed: ' + r.status);
+            var json = await r.json();
+            return json.record || {};
+        }
+
+        async function jsonbinWrite(data) {
+            var { binId, apiKey } = getBinConfig();
+            if (!binId || !apiKey) throw new Error('JSONBin not configured');
+            var r = await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+                body: JSON.stringify(data),
+            });
+            if (!r.ok) throw new Error('Write failed: ' + r.status);
+        }
+
+        // ── Load all data ──────────────────────────────────────────────────────────────
+        var siteData = { changelog: [], hero: {}, links: {} };
+
+        async function loadData() {
+            document.getElementById('changelogStatus').textContent = 'Loading…';
+            try {
+                var db = await jsonbinRead();
+                siteData = Object.assign({ changelog: [], hero: {}, links: {} }, db.website || {});
+                renderChangelog();
+                renderHero();
+                renderLinks();
+                document.getElementById('changelogStatus').textContent = siteData.changelog.length + ' releases';
+            } catch (e) {
+                document.getElementById('changelogStatus').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // ── Changelog ──────────────────────────────────────────────────────────────────
+        function renderChangelog() {
+            var list = document.getElementById('entryList');
+            if (!siteData.changelog.length) {
+                list.innerHTML = '<div style="font-size:13px;color:var(--dim);padding:8px 0">No releases yet. Add one below.</div>';
+                return;
+            }
+            list.innerHTML = siteData.changelog.map(function (entry, i) {
+                return '<div class="entry" id="entry-' + i + '">' +
+                    '<div class="entry-head" onclick="toggleEntry(' + i + ')">' +
+                    '<div class="entry-info">' +
+                    '<span class="entry-version">' + escHtml(entry.version) + '</span>' +
+                    '<span class="entry-date">' + escHtml(entry.date) + '</span>' +
+                    (entry.latest ? '<span class="entry-badge-new">Latest</span>' : '') +
+                    '</div>' +
+                    '<div class="entry-actions" onclick="event.stopPropagation()">' +
+                    '<button class="btn btn-ghost btn-sm" onclick="moveEntry(' + i + ',-1)">↑</button>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="moveEntry(' + i + ',1)">↓</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteEntry(' + i + ')">Delete</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="entry-body" id="entry-body-' + i + '">' +
+                    '<div class="field" style="margin-bottom:10px">' +
+                    '<div class="field-row">' +
+                    '<div><label>Version</label><input type="text" value="' + escHtml(entry.version) + '" onchange="updateEntry(' + i + ',\'version\',this.value)"></div>' +
+                    '<div><label>Date</label><input type="text" value="' + escHtml(entry.date) + '" onchange="updateEntry(' + i + ',\'date\',this.value)"></div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="field" style="margin-bottom:10px">' +
+                    '<label>Changes</label>' +
+                    '<div class="items-list" id="items-' + i + '">' +
+                    entry.items.map(function (item, j) {
+                        return '<div class="item-row">' +
+                            '<input type="text" value="' + escHtml(item) + '" onchange="updateItem(' + i + ',' + j + ',this.value)">' +
+                            '<button class="btn btn-danger btn-sm" onclick="removeItem(' + i + ',' + j + ')">✕</button>' +
+                            '</div>';
+                    }).join('') +
+                    '</div>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="addItem(' + i + ')">+ Add line</button>' +
+                    '</div>' +
+                    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer">' +
+                    '<input type="checkbox" ' + (entry.latest ? 'checked' : '') + ' onchange="updateEntry(' + i + ',\'latest\',this.checked)"> Mark as latest' +
+                    '</label>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function toggleEntry(i) {
+            var body = document.getElementById('entry-body-' + i);
+            body.classList.toggle('open');
+        }
+
+        function updateEntry(i, key, val) {
+            siteData.changelog[i][key] = val;
+        }
+
+        function updateItem(i, j, val) {
+            siteData.changelog[i].items[j] = val;
+        }
+
+        function addItem(i) {
+            siteData.changelog[i].items.push('New change');
+            renderChangelog();
+        }
+
+        function removeItem(i, j) {
+            siteData.changelog[i].items.splice(j, 1);
+            renderChangelog();
+        }
+
+        function deleteEntry(i) {
+            if (!confirm('Delete ' + siteData.changelog[i].version + '?')) return;
+            siteData.changelog.splice(i, 1);
+            renderChangelog();
+        }
+
+        function moveEntry(i, dir) {
+            var j = i + dir;
+            if (j < 0 || j >= siteData.changelog.length) return;
+            var tmp = siteData.changelog[i];
+            siteData.changelog[i] = siteData.changelog[j];
+            siteData.changelog[j] = tmp;
+            renderChangelog();
+        }
+
+        function addEntry() {
+            var version = document.getElementById('newVersion').value.trim();
+            var date = document.getElementById('newDate').value.trim();
+            var items = document.getElementById('newItems').value.trim().split('\n').filter(Boolean);
+            var latest = document.getElementById('newIsLatest').checked;
+
+            if (!version) { alert('Version is required'); return; }
+
+            // Unmark previous latest
+            if (latest) siteData.changelog.forEach(function (e) { e.latest = false; });
+
+            siteData.changelog.unshift({ version, date, items, latest });
+            document.getElementById('newVersion').value = '';
+            document.getElementById('newDate').value = '';
+            document.getElementById('newItems').value = '';
+            renderChangelog();
+        }
+
+        async function saveChangelog() {
+            showStatus('changelogSaveStatus', 'saving', 'Saving…');
+            try {
+                var db = await jsonbinRead();
+                if (!db.website) db.website = {};
+                db.website.changelog = siteData.changelog;
+                await jsonbinWrite(db);
+                showStatus('changelogSaveStatus', 'ok', '✓ Published');
+            } catch (e) {
+                showStatus('changelogSaveStatus', 'err', '✗ ' + e.message);
+            }
+        }
+
+        // ── Hero ───────────────────────────────────────────────────────────────────────
+        function renderHero() {
+            var h = siteData.hero || {};
+            document.getElementById('heroTagline').value = h.tagline || 'always there';
+            document.getElementById('heroSub').value = h.sub || '';
+            document.getElementById('heroNote').value = h.note || 'Free forever · No account required to try · Windows 10/11';
+        }
+
+        async function saveHero() {
+            showStatus('heroSaveStatus', 'saving', 'Saving…');
+            try {
+                var db = await jsonbinRead();
+                if (!db.website) db.website = {};
+                db.website.hero = {
+                    tagline: document.getElementById('heroTagline').value.trim(),
+                    sub: document.getElementById('heroSub').value.trim(),
+                    note: document.getElementById('heroNote').value.trim(),
+                };
+                await jsonbinWrite(db);
+                showStatus('heroSaveStatus', 'ok', '✓ Published');
+            } catch (e) {
+                showStatus('heroSaveStatus', 'err', '✗ ' + e.message);
+            }
+        }
+
+        // ── Links ──────────────────────────────────────────────────────────────────────
+        function renderLinks() {
+            var l = siteData.links || {};
+            document.getElementById('linkItchio').value = l.itchio || '';
+            document.getElementById('linkGithub').value = l.github || '';
+        }
+
+        async function saveLinks() {
+            showStatus('linksSaveStatus', 'saving', 'Saving…');
+            try {
+                var db = await jsonbinRead();
+                if (!db.website) db.website = {};
+                db.website.links = {
+                    itchio: document.getElementById('linkItchio').value.trim(),
+                    github: document.getElementById('linkGithub').value.trim(),
+                };
+                await jsonbinWrite(db);
+                showStatus('linksSaveStatus', 'ok', '✓ Published');
+            } catch (e) {
+                showStatus('linksSaveStatus', 'err', '✗ ' + e.message);
+            }
+        }
+
+        // ── Utils ──────────────────────────────────────────────────────────────────────
+        function showStatus(id, type, msg) {
+            var el = document.getElementById(id);
+            el.className = 'status ' + type;
+            el.textContent = msg;
+            if (type === 'ok') setTimeout(function () { el.className = 'status'; }, 3000);
+        }
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+
+</html>

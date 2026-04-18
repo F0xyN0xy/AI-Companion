@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Companion — Your personal AI, always there</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --ink: #1a1a2e;
+            --ink-soft: #4a4a6a;
+            --ink-muted: #8888aa;
+            --cream: #faf9f6;
+            --warm: #f5f0e8;
+            --accent: #c8a96e;
+            --accent-deep: #9a7845;
+            --accent-light: rgba(200, 169, 110, .12);
+            --border: rgba(26, 26, 46, .1);
+            --border-strong: rgba(26, 26, 46, .2);
+            --purple: #7c6af7;
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--ink);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--cream);
+            overflow-x: hidden
+        }
+
+        /* ── Noise texture overlay ────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: .4;
+        }
+
+        /* ── Nav ───────────────────────────────────────────────────── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 64px;
+            background: linear-gradient(to bottom, rgba(26, 26, 46, .95), transparent);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            letter-spacing: .01em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center
+        }
+
+        .nav-links a {
+            color: rgba(250, 249, 246, .55);
+            font-size: 14px;
+            text-decoration: none;
+            transition: color .2s;
+            font-weight: 300;
+        }
+
+        .nav-links a:hover {
+            color: var(--cream)
+        }
+
+        .nav-cta {
+            background: var(--accent);
+            color: var(--ink) !important;
+            padding: 9px 20px;
+            border-radius: 8px;
+            font-weight: 500 !important;
+            transition: filter .2s !important;
+        }
+
+        .nav-cta:hover {
+            filter: brightness(1.1)
+        }
+
+        /* ── Hero ──────────────────────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-orb {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero-orb-1 {
+            width: 600px;
+            height: 600px;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(circle, rgba(200, 169, 110, .12) 0%, transparent 65%);
+            animation-delay: 0s;
+        }
+
+        .hero-orb-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -100px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(124, 106, 247, .1) 0%, transparent 65%);
+            animation-delay: -3s;
+        }
+
+        .hero-orb-3 {
+            width: 300px;
+            height: 300px;
+            bottom: 0;
+            right: -80px;
+            background: radial-gradient(circle, rgba(200, 169, 110, .07) 0%, transparent 65%);
+            animation-delay: -6s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(-50%)
+            }
+
+            50% {
+                transform: translateY(-20px) translateX(-50%)
+            }
+        }
+
+        .hero-orb-2 {
+            animation: float2 10s ease-in-out infinite
+        }
+
+        .hero-orb-3 {
+            animation: float3 7s ease-in-out infinite
+        }
+
+        @keyframes float2 {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-15px)
+            }
+        }
+
+        @keyframes float3 {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(12px)
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(200, 169, 110, .1);
+            border: 1px solid rgba(200, 169, 110, .2);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            animation: fadein .8s ease both;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+
+        .hero-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(52px, 8vw, 96px);
+            line-height: 1.0;
+            letter-spacing: -.02em;
+            margin-bottom: 24px;
+            animation: fadein .8s .1s ease both;
+        }
+
+        .hero-title em {
+            color: var(--accent);
+            font-style: italic
+        }
+
+        .hero-sub {
+            font-size: clamp(16px, 2vw, 20px);
+            color: rgba(250, 249, 246, .5);
+            font-weight: 300;
+            line-height: 1.6;
+            max-width: 560px;
+            margin: 0 auto 48px;
+            animation: fadein .8s .2s ease both;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadein .8s .3s ease both;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent);
+            color: var(--ink);
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all .2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px)
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(250, 249, 246, .06);
+            color: rgba(250, 249, 246, .7);
+            border: 1px solid rgba(250, 249, 246, .12);
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 400;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all .2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(250, 249, 246, .1);
+            color: var(--cream);
+            transform: translateY(-1px)
+        }
+
+        .hero-note {
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(250, 249, 246, .25);
+            animation: fadein .8s .4s ease both;
+        }
+
+        @keyframes fadein {
+            from {
+                opacity: 0;
+                transform: translateY(16px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* ── Divider ───────────────────────────────────────────────── */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 64px;
+            margin: 0 0 80px;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .section-divider span {
+            font-family: 'DM Serif Display', serif;
+            font-size: 13px;
+            color: var(--accent);
+            opacity: .6;
+            white-space: nowrap;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        /* ── Features ──────────────────────────────────────────────── */
+        .features {
+            padding: 80px 64px;
+            position: relative;
+            z-index: 1
+        }
+
+        .features-header {
+            text-align: center;
+            margin-bottom: 72px
+        }
+
+        .section-label {
+            display: inline-block;
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(36px, 5vw, 56px);
+            line-height: 1.1;
+            margin-bottom: 16px;
+        }
+
+        .section-sub {
+            font-size: 16px;
+            color: rgba(250, 249, 246, .45);
+            font-weight: 300;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .feat-card {
+            background: rgba(250, 249, 246, .03);
+            border: 1px solid var(--border);
+            padding: 36px 32px;
+            transition: all .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(200, 169, 110, .06), transparent 60%);
+            opacity: 0;
+            transition: opacity .3s;
+        }
+
+        .feat-card:hover {
+            background: rgba(250, 249, 246, .05);
+            border-color: rgba(200, 169, 110, .2)
+        }
+
+        .feat-card:hover::before {
+            opacity: 1
+        }
+
+        .feat-card:first-child {
+            border-radius: 12px 0 0 0
+        }
+
+        .feat-card:nth-child(3) {
+            border-radius: 0 12px 0 0
+        }
+
+        .feat-card:nth-child(4) {
+            border-radius: 0 0 0 12px
+        }
+
+        .feat-card:last-child {
+            border-radius: 0 0 12px 0
+        }
+
+        .feat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(200, 169, 110, .1);
+            border: 1px solid rgba(200, 169, 110, .18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .feat-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 20px;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+
+        .feat-desc {
+            font-size: 14px;
+            color: rgba(250, 249, 246, .45);
+            line-height: 1.7;
+            font-weight: 300
+        }
+
+        /* ── Download ──────────────────────────────────────────────── */
+        .download {
+            padding: 80px 64px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(to bottom, transparent, rgba(200, 169, 110, .04), transparent);
+        }
+
+        .download-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        .download-info .section-label {
+            display: block;
+            margin-bottom: 12px
+        }
+
+        .download-info .section-title {
+            font-size: clamp(32px, 4vw, 48px);
+            margin-bottom: 16px
+        }
+
+        .download-info p {
+            font-size: 15px;
+            color: rgba(250, 249, 246, .5);
+            line-height: 1.7;
+            font-weight: 300;
+            margin-bottom: 32px
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(250, 249, 246, .05);
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            padding: 18px 22px;
+            text-decoration: none;
+            transition: all .25s;
+            margin-bottom: 12px;
+        }
+
+        .download-btn:hover {
+            background: rgba(200, 169, 110, .08);
+            border-color: rgba(200, 169, 110, .3);
+            transform: translateX(4px)
+        }
+
+        .download-btn-icon {
+            font-size: 24px;
+            flex-shrink: 0
+        }
+
+        .download-btn-text .label {
+            font-size: 11px;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 3px
+        }
+
+        .download-btn-text .name {
+            font-size: 15px;
+            color: var(--cream);
+            font-weight: 500
+        }
+
+        .download-btn-text .meta {
+            font-size: 11px;
+            color: var(--ink-muted);
+            margin-top: 2px
+        }
+
+        .download-btn-arrow {
+            margin-left: auto;
+            color: var(--accent);
+            opacity: .6;
+            font-size: 18px;
+            transition: transform .2s
+        }
+
+        .download-btn:hover .download-btn-arrow {
+            transform: translateX(3px);
+            opacity: 1
+        }
+
+        /* ── Changelog ─────────────────────────────────────────────── */
+        .changelog-panel {
+            background: rgba(250, 249, 246, .03);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .changelog-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .changelog-header span {
+            font-size: 13px;
+            color: rgba(250, 249, 246, .4);
+            font-weight: 300
+        }
+
+        .changelog-header strong {
+            font-size: 14px;
+            font-weight: 500
+        }
+
+        .changelog-body {
+            padding: 0;
+            max-height: 340px;
+            overflow-y: auto
+        }
+
+        .changelog-body::-webkit-scrollbar {
+            width: 3px
+        }
+
+        .changelog-body::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 2px
+        }
+
+        .changelog-entry {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .changelog-entry:last-child {
+            border-bottom: none
+        }
+
+        .changelog-version {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .changelog-version .version {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            background: rgba(200, 169, 110, .1);
+            border: 1px solid rgba(200, 169, 110, .2);
+            border-radius: 6px;
+            padding: 2px 8px;
+        }
+
+        .changelog-version .date {
+            font-size: 11px;
+            color: rgba(250, 249, 246, .3)
+        }
+
+        .changelog-version .badge-new {
+            font-size: 10px;
+            background: rgba(124, 106, 247, .15);
+            color: #a78bfa;
+            border: 1px solid rgba(124, 106, 247, .25);
+            border-radius: 4px;
+            padding: 1px 7px;
+        }
+
+        .changelog-items {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px
+        }
+
+        .changelog-items li {
+            font-size: 13px;
+            color: rgba(250, 249, 246, .5);
+            font-weight: 300;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .changelog-items li::before {
+            content: '—';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            opacity: .5;
+            font-size: 11px;
+            top: 1px;
+        }
+
+        /* ── Links ─────────────────────────────────────────────────── */
+        .links-section {
+            padding: 80px 64px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .links-grid {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .link-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(250, 249, 246, .04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            text-decoration: none;
+            color: var(--cream);
+            transition: all .25s;
+            min-width: 180px;
+        }
+
+        .link-card:hover {
+            background: rgba(200, 169, 110, .07);
+            border-color: rgba(200, 169, 110, .25);
+            transform: translateY(-2px)
+        }
+
+        .link-card-icon {
+            font-size: 22px
+        }
+
+        .link-card-text .lc-label {
+            font-size: 11px;
+            color: rgba(250, 249, 246, .35);
+            text-transform: uppercase;
+            letter-spacing: .07em
+        }
+
+        .link-card-text .lc-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 2px
+        }
+
+        /* ── Footer ───────────────────────────────────────────────── */
+        footer {
+            padding: 40px 64px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-brand {
+            font-family: 'DM Serif Display', serif;
+            color: var(--accent);
+            font-size: 16px
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px
+        }
+
+        .footer-links a {
+            font-size: 13px;
+            color: rgba(250, 249, 246, .35);
+            text-decoration: none;
+            transition: color .2s
+        }
+
+        .footer-links a:hover {
+            color: rgba(250, 249, 246, .6)
+        }
+
+        .footer-copy {
+            font-size: 12px;
+            color: rgba(250, 249, 246, .2)
+        }
+
+        /* ── Responsive ────────────────────────────────────────────── */
+        @media(max-width:900px) {
+            nav {
+                padding: 18px 24px
+            }
+
+            .nav-links {
+                display: none
+            }
+
+            .features {
+                padding: 60px 24px
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr
+            }
+
+            .feat-card {
+                border-radius: 12px !important
+            }
+
+            .download {
+                padding: 60px 24px
+            }
+
+            .download-inner {
+                grid-template-columns: 1fr
+            }
+
+            .links-section {
+                padding: 60px 24px
+            }
+
+            footer {
+                padding: 32px 24px;
+                flex-direction: column;
+                text-align: center
+            }
+
+            .footer-links {
+                justify-content: center
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav>
+        <a href="#" class="nav-logo">✦ AI Companion</a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#download">Download</a>
+            <a href="#links">Community</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+            <a href="#download" class="nav-cta">Download Free</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+
+        <div class="hero-badge">
+            <span class="dot"></span>
+            Free · Windows · No subscription
+        </div>
+
+        <h1 class="hero-title">
+            Your personal AI,<br><em id="heroTaglineEl">always there</em>
+        </h1>
+
+        <p class="hero-sub" id="heroSubEl">
+            A companion that remembers you, grows with you, and never feels like a chatbot.
+            Powered by Llama 3.3 70B with persistent memory and evolving personality.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#download" class="btn-primary">
+                ↓ &nbsp;Download for Windows
+            </a>
+            <a href="https://foxynet475.itch.io/AI-Companion" id="heroItchioBtn" target="_blank" class="btn-secondary">
+                🎮 &nbsp;View on itch.io
+            </a>
+        </div>
+
+        <p class="hero-note" id="heroNoteEl">Free forever · No account required to try · Windows 10/11</p>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="features-header">
+            <div class="section-label">What makes it different</div>
+            <h2 class="section-title">Built to feel real</h2>
+            <p class="section-sub">Most AI companions feel static after a few conversations. This one doesn't.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feat-card">
+                <div class="feat-icon">🧠</div>
+                <div class="feat-title">Evolving Memory</div>
+                <div class="feat-desc">Remembers facts, preferences, and important events across every conversation.
+                    Core memories never fade. Others shift in importance over time.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">💬</div>
+                <div class="feat-title">Personality Drift</div>
+                <div class="feat-desc">Five personality traits — warmth, confidence, playfulness, openness,
+                    assertiveness — that genuinely shift based on your conversations over weeks.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🌊</div>
+                <div class="feat-title">Deep Talk Mode</div>
+                <div class="feat-desc">Automatically detects emotional or philosophical topics and switches to a deeper
+                    reasoning model. Toggle it manually anytime.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🎭</div>
+                <div class="feat-title">Fully Customisable</div>
+                <div class="feat-desc">Name, personality, avatar, colour — make them entirely yours. The companion
+                    adapts to whoever you build.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🧱</div>
+                <div class="feat-title">Real Autonomy</div>
+                <div class="feat-desc">Your companion can disagree, change the subject, express discomfort, or push
+                    back. Not a servant — a person.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🎮</div>
+                <div class="feat-title">Discord Rich Presence</div>
+                <div class="feat-desc">Shows what you're up to in Discord — companion name, current mood, time spent
+                    chatting. Fully integrated.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download -->
+    <section class="download" id="download">
+        <div class="download-inner">
+            <div class="download-info">
+                <span class="section-label">Get the app</span>
+                <h2 class="section-title">Download<br>AI Companion</h2>
+                <p>Free for Windows. No subscription, no hidden costs. Updates install automatically in the background.
+                </p>
+
+                <a href="#" class="download-btn" id="downloadInstallerBtn">
+                    <div class="download-btn-icon">💾</div>
+                    <div class="download-btn-text">
+                        <div class="label">Recommended</div>
+                        <div class="name">Windows Installer (.exe)</div>
+                        <div class="meta" id="installerMeta">Latest version · Auto-updates</div>
+                    </div>
+                    <div class="download-btn-arrow">→</div>
+                </a>
+
+                <a href="https://foxynet475.itch.io/AI-Companion" target="_blank" class="download-btn">
+                    <div class="download-btn-icon">🎮</div>
+                    <div class="download-btn-text">
+                        <div class="label">Also available on</div>
+                        <div class="name">itch.io</div>
+                        <div class="meta">Rate, review & follow updates</div>
+                    </div>
+                    <div class="download-btn-arrow">→</div>
+                </a>
+            </div>
+
+            <!-- Changelog -->
+            <div class="changelog-panel">
+                <div class="changelog-header">
+                    <strong>Changelog</strong>
+                    <span>Recent releases</span>
+                </div>
+                <div class="changelog-body" id="changelogBody">
+                    <div style="padding:18px 22px;font-size:13px;color:rgba(250,249,246,.3)">Loading…</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Links -->
+    <section class="links-section" id="links">
+        <div class="section-label">Find us</div>
+        <h2 class="section-title" style="font-size:clamp(28px,4vw,44px)">Community & Links</h2>
+
+        <div class="links-grid">
+            <a href="https://foxynet475.itch.io/AI-Companion" id="linkItchio" target="_blank" class="link-card">
+                <div class="link-card-icon">🎮</div>
+                <div class="link-card-text">
+                    <div class="lc-label">Play & Download</div>
+                    <div class="lc-name">itch.io</div>
+                </div>
+            </a>
+            <a href="https://github.com/F0xyN0xy/AI-Companion" id="linkGithub" target="_blank" class="link-card">
+                <div class="link-card-icon">🐙</div>
+                <div class="link-card-text">
+                    <div class="lc-label">Source</div>
+                    <div class="lc-name">GitHub</div>
+                </div>
+            </a>
+            <a href="privacy.html" class="link-card">
+                <div class="link-card-icon">🔒</div>
+                <div class="link-card-text">
+                    <div class="lc-label">Legal</div>
+                    <div class="lc-name">Privacy Policy</div>
+                </div>
+            </a>
+            <a href="terms.html" class="link-card">
+                <div class="link-card-icon">📄</div>
+                <div class="link-card-text">
+                    <div class="lc-label">Legal</div>
+                    <div class="lc-name">Terms of Service</div>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-brand">✦ AI Companion</div>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+            <a href="https://github.com/F0xyN0xy/AI-Companion" target="_blank">GitHub</a>
+            <a href="https://foxynet475.itch.io/AI-Companion" target="_blank">itch.io</a>
+        </div>
+        <div class="footer-copy">© 2026 AI Companion. Free forever.</div>
+    </footer>
+
+    <script>
+        var WEBSITE_BIN_ID = '69e3aff2856a6821894a0cbb';
+        var WEBSITE_API_KEY = '$2a$10$qnwVz/rjOwOGtcpGF40oz.EifFhWeiWwb7QRZeKaC/VyI8NHJ9T72';
+
+        async function loadSiteContent() {
+            try {
+                var r = await fetch('https://api.jsonbin.io/v3/b/' + WEBSITE_BIN_ID + '/latest', {
+                    headers: { 'X-Master-Key': WEBSITE_API_KEY }
+                });
+                if (!r.ok) return;
+                var json = await r.json();
+                var data = (json.record || {}).website || {};
+
+                // Hero
+                if (data.hero) {
+                    if (data.hero.tagline) document.getElementById('heroTaglineEl').textContent = data.hero.tagline;
+                    if (data.hero.sub) document.getElementById('heroSubEl').textContent = data.hero.sub;
+                    if (data.hero.note) document.getElementById('heroNoteEl').textContent = data.hero.note;
+                }
+
+                // Links
+                if (data.links) {
+                    if (data.links.itchio) {
+                        document.getElementById('linkItchio').href = data.links.itchio;
+                        document.getElementById('heroItchioBtn').href = data.links.itchio;
+                    }
+                    if (data.links.github) {
+                        document.getElementById('linkGithub').href = data.links.github;
+                    }
+                }
+
+                // Changelog
+                if (data.changelog && data.changelog.length) {
+                    var body = document.getElementById('changelogBody');
+                    body.innerHTML = data.changelog.map(function (entry) {
+                        return '<div class="changelog-entry">' +
+                            '<div class="changelog-version">' +
+                            '<span class="version">' + escHtml(entry.version) + '</span>' +
+                            '<span class="date">' + escHtml(entry.date) + '</span>' +
+                            (entry.latest ? '<span class="badge-new">Latest</span>' : '') +
+                            '</div>' +
+                            '<ul class="changelog-items">' +
+                            (entry.items || []).map(function (item) {
+                                return '<li>' + escHtml(item) + '</li>';
+                            }).join('') +
+                            '</ul>' +
+                            '</div>';
+                    }).join('');
+                } else {
+                    document.getElementById('changelogBody').innerHTML =
+                        '<div style="padding:18px 22px;font-size:13px;color:rgba(250,249,246,.3)">No releases yet.</div>';
+                }
+            } catch (e) {
+                // Silently fail — page still works with defaults
+            }
+        }
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ── GitHub releases for download button ───────────────────────────────────────
+        fetch('https://api.github.com/repos/F0xyN0xy/AI-Companion/releases/latest')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.tag_name) {
+                    var asset = (data.assets || []).find(function (a) { return a.name.endsWith('.exe'); });
+                    if (asset) {
+                        document.getElementById('downloadInstallerBtn').href = asset.browser_download_url;
+                        document.getElementById('installerMeta').textContent =
+                            data.tag_name + ' · ' + (asset.size / 1024 / 1024).toFixed(1) + ' MB';
+                    }
+                }
+            })
+            .catch(function () { });
+
+        // ── Smooth scroll ─────────────────────────────────────────────────────────────
+        document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                var target = document.querySelector(this.getAttribute('href'));
+                if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+            });
+        });
+
+        // ── Scroll fade-in ────────────────────────────────────────────────────────────
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.feat-card, .download-btn, .link-card').forEach(function (el) {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity .5s ease, transform .5s ease';
+            observer.observe(el);
+        });
+
+        // Load dynamic content
+        loadSiteContent();
+    </script>
+</body>
+
+</html>
